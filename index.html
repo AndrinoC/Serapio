@@ -735,18 +735,18 @@
       }
       #right-ui-container {
         position: absolute;
-        bottom: 20px; /* Move it further down */
+        bottom: 20px;
         right: 20px;
-        z-index: 55; /* Ensure it's above typical screen overlays (z-index 50) */
+        z-index: 55;
         text-align: right;
         text-shadow: 1px 1px 3px #000;
         opacity: 0.7;
         transition: opacity 0.3s ease-in-out;
-        max-height: 40vh; /* Add max-height to prevent it from getting too tall */
-        overflow-y: auto; /* Add scroll if content exceeds max-height */
-        padding: 5px; /* Add some padding */
-        background-color: rgba(0,0,0,0.2); /* Slight background for better readability if needed */
-        border-radius: 5px; /* Optional rounded corners */
+        max-height: 40vh;
+        overflow-y: auto;
+        padding: 5px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
       }
       #autofire-indicator {
         font-size: 1.2em;
@@ -763,15 +763,15 @@
         gap: 5px;
       }
       inventory-item {
-        font-size: 0.6em; /* Reduce font size */
-        background: rgba(0, 0, 0, 0.5); /* Slightly darker background for items */
-        padding: 3px 6px; /* Reduce padding */
+        font-size: 0.6em;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 3px 6px;
         border-radius: 3px;
         border: 1px solid rgba(255, 255, 255, 0.15);
         display: flex;
         align-items: center;
-        gap: 4px; /* Reduce gap */
-        margin-bottom: 3px; /* Add small margin between items */
+        gap: 4px;
+        margin-bottom: 3px;
       }
       #toggleInventoryButton {
         position: absolute;
@@ -845,12 +845,27 @@
   </head>
   <body>
     <div id="levelUpFlash"></div>
+    <div
+      id="sceneTransitionOverlay"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        opacity: 0;
+        visibility: hidden;
+        z-index: 9998;
+        transition: opacity 0.7s ease-in-out, visibility 0s linear 0.7s;
+      "
+    ></div>
 
     <div id="splashScreen" class="screen">
       <div class="splash-content-wrapper">
         <h1>Seraph<br />Defesa Final</h1>
         <div class="splash-buttons">
-          <button id="startButton">Iniciar Jogo</button>
+          <button id="goToDifficultyButton">Iniciar Jogo</button>
           <button id="splashHatShopButton">Classes</button>
           <button id="splashLeaderboardButton">Placar</button>
           <button id="splashWikiButton" class="btn">Wiki</button>
@@ -860,6 +875,23 @@
           <button id="splashDebugButton" class="btn">Debug</button>
         </div>
       </div>
+    </div>
+
+    <div
+      id="difficultyScreen"
+      class="screen"
+      style="display: none; background-color: #050510"
+    >
+      <h2>Escolha a Dificuldade</h2>
+      <div class="options-container">
+        <button id="difficultyEasy" class="btn">Fácil</button>
+        <button id="difficultyNormal" class="btn">Normal</button>
+        <button id="difficultyHard" class="btn">Difícil</button>
+        <button id="difficultyCustom" class="btn">Custom (WIP)</button>
+      </div>
+      <button id="difficultyBackButton" class="btn" style="margin-top: 30px">
+        Voltar
+      </button>
     </div>
 
     <div id="optionsScreen" class="screen">
@@ -934,6 +966,11 @@
             color: #fff;
             text-shadow: 1px 1px 2px #000;
             z-index: 1;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            pointer-events: none;
           "
           >0/0 (0%)</span
         >
@@ -1069,6 +1106,13 @@
         wikiBackButton = d.getElementById("wikiBackButton"),
         splashWikiButton = d.getElementById("splashWikiButton"),
         pauseWikiButton = d.getElementById("pauseWikiButton");
+      (goToDifficultyButton = d.getElementById("goToDifficultyButton")),
+        (difficultyScreen = d.getElementById("difficultyScreen")),
+        (difficultyEasy = d.getElementById("difficultyEasy")),
+        (difficultyNormal = d.getElementById("difficultyNormal")),
+        (difficultyHard = d.getElementById("difficultyHard")),
+        (difficultyCustom = d.getElementById("difficultyCustom")),
+        (difficultyBackButton = d.getElementById("difficultyBackButton"));
       const spriteImages = {};
       let wikiReturnScreen = null;
       class SoundManager {
@@ -1158,15 +1202,14 @@
         }
 
         playShootSound() {
-          this.playSound(1200, 400, 0.1, "sawtooth", 0.3);
-          this.playSound(800, 1200, 0.05, "sine", 0.2);
-          this.playSound(1000, 300, 0.1, "sawtooth", 0.25);
-          this.playNoise(0.08, 1500, 0.15, "bandpass");
+          this.playSound(600, 1200, 0.03, "triangle", 0.25);
+          this.playSound(1000, 200, 0.07, "square", 0.3);
+          this.playNoise(0.06, 2500, 0.1, "highpass");
         }
 
         playEnemyHitSound() {
-          this.playSound(200, 100, 0.12, "sine", 0.35);
-          this.playNoise(0.1, 800, 0.25, "bandpass");
+          this.playSound(300, 50, 0.15, "sine", 0.4);
+          this.playNoise(0.12, 600, 0.3, "bandpass", 0.7);
         }
 
         playPlayerDamageSound() {
@@ -1221,20 +1264,38 @@
         stars: [],
         init() {
           this.stars = [];
-          const e = { near: 50, mid: 100, far: 200 },
-            t = {
-              near: { size: 2, parallax: 0.2 },
-              mid: { size: 1.5, parallax: 0.1 },
-              far: { size: 1, parallax: 0.05 },
-            };
-          for (const o in e)
-            for (let i = 0; i < e[o]; i++)
+          const config =
+            starfieldConfigs[currentStarfieldConfig % starfieldConfigs.length];
+          const e = { near: config.near, mid: config.mid, far: config.far };
+          const t = {
+            near: {
+              size: config.baseSize * 1.2,
+              parallax: 0.2,
+              colors: config.colors,
+            },
+            mid: {
+              size: config.baseSize,
+              parallax: 0.1,
+              colors: config.colors,
+            },
+            far: {
+              size: config.baseSize * 0.8,
+              parallax: 0.05,
+              colors: config.colors,
+            },
+          };
+          for (const o in e) {
+            for (let i = 0; i < e[o]; i++) {
               this.stars.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
                 size: Math.random() * t[o].size,
                 parallax: t[o].parallax,
+                color:
+                  t[o].colors[Math.floor(Math.random() * t[o].colors.length)],
               });
+            }
+          }
         },
         update(e) {
           this.stars.forEach((t) => {
@@ -1246,6 +1307,7 @@
         draw() {
           (ctx.fillStyle = "#fff"),
             this.stars.forEach((e) => {
+              ctx.fillStyle = e.color;
               ctx.beginPath(),
                 ctx.arc(e.x, e.y, e.size / 2, 0, 2 * Math.PI),
                 ctx.fill();
@@ -1277,6 +1339,49 @@
         leaderboardReturnScreen = null,
         optionsReturnScreen = null;
       let totalEnemiesThisWave = 0;
+      let undergoingBossDefeatTransition = false;
+      let currentGroundColor = "#1a1a2a";
+      let currentGroundStrokeColor = "#9b59b6";
+      let currentStarfieldConfig = 0;
+      const orbiterStartWave = 4;
+      const erraticStartWave = 4;
+      const dashingStartWave = 4;
+      const grounderStartWave = 4;
+      const starfieldConfigs = [
+        {
+          near: 50,
+          mid: 100,
+          far: 200,
+          baseSize: 1,
+          colors: ["#FFFFFF", "#DDDDFF", "#BBBBFF"],
+        },
+        {
+          near: 70,
+          mid: 120,
+          far: 250,
+          baseSize: 1.2,
+          colors: ["#FFDDDD", "#FFBBBB", "#FF9999"],
+        },
+        {
+          near: 60,
+          mid: 110,
+          far: 220,
+          baseSize: 0.9,
+          colors: ["#DDFFDD", "#BBFFBB", "#99FF99"],
+        },
+        {
+          near: 40,
+          mid: 90,
+          far: 180,
+          baseSize: 1.1,
+          colors: ["#FFFFDD", "#FFFFBB", "#FFFF99"],
+        },
+      ];
+      let difficultySettings = {
+        threatMultiplier: 1.0,
+        enemyScalingMultiplier: 1.0,
+      };
+      let selectedDifficultyName = "Normal";
       let gameData = {
         totalSouls: 0,
         unlockedHats: ["hat_bruxo"],
@@ -1587,14 +1692,16 @@
           },
           rarity: "uncommon",
           icon: "fragmentacao.png",
-          apply: (e) => (e.stats.fragmentation = (e.stats.fragmentation || 0) + 1),
+          apply: (e) =>
+            (e.stats.fragmentation = (e.stats.fragmentation || 0) + 1),
         },
         {
           name: "Estilhaços Entrópicos +",
-          description: "Ao morrer, inimigos liberam mais 4 projéteis fracos (total +3 desde base).",
-          rarity: "rare", // This being a separate upgrade implies it's not just stacking the common one
+          description:
+            "Ao morrer, inimigos liberam mais 4 projéteis fracos (total +3 desde base).",
+          rarity: "rare",
           icon: "fragmentacao2.png",
-          apply: (e) => (e.stats.fragmentation += 4), // If this adds ON TOP of the previous one
+          apply: (e) => (e.stats.fragmentation += 4),
         },
         {
           name: "Cometa Cinético",
@@ -1631,12 +1738,13 @@
           description: "Chama relâmpagos do céu a cada 5s.",
           generatesNextLevelDescription: (currentPlayerStats, currentLevel) => {
             const currentBolts = currentPlayerStats.thunderboltCount || 0;
-            const nextBolts = currentBolts + 2; // Assumes the apply function adds 2
+            const nextBolts = currentBolts + 2;
             return `Chama relâmpagos do céu a cada 5s. Relâmpagos atuais: ${currentBolts} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextBolts}</span>.`;
           },
           rarity: "uncommon",
           icon: "relampago.png",
-          apply: (e) => (e.stats.thunderboltCount = (e.stats.thunderboltCount || 0) + 2),
+          apply: (e) =>
+            (e.stats.thunderboltCount = (e.stats.thunderboltCount || 0) + 2),
         },
         {
           name: "Fúria Celestial +",
@@ -2498,14 +2606,12 @@
         }
         totalEnemiesThisWave = enemies.length;
       }
-      const orbiterStartWave = 4;
-      const erraticStartWave = 4;
-      const dashingStartWave = 4;
-      const grounderStartWave = 4;
+
       function createProceduralWave(e) {
-        let threatPoints = 3 + Math.floor(e * 1.25);
-        if (e > 10) threatPoints += Math.floor((e - 10) * 0.75);
-        if (e > 20) threatPoints += Math.floor((e - 20) * 0.5);
+        let baseThreat = 3 + Math.floor(e * 1.25);
+        if (e > 10) baseThreat += Math.floor((e - 10) * 0.75);
+        if (e > 20) baseThreat += Math.floor((e - 20) * 0.5);
+        let threatPoints = baseThreat * difficultySettings.threatMultiplier;
 
         const enemyComposition = {
           LacaioDoVazio: 0,
@@ -2526,6 +2632,8 @@
           DashingPhantom: 2.5,
           GroundSkulker: 3,
         };
+
+        let guaranteedSpecialSpawnedThisWave = false;
 
         if (e >= 4 && e % 2 === 0) {
           const specialTypesAvailableForGuarantee = [];
@@ -2548,74 +2656,100 @@
             if (threatPoints >= threatCosts[chosenSpecial]) {
               enemyComposition[chosenSpecial]++;
               threatPoints -= threatCosts[chosenSpecial];
-            } else {
-              if (threatPoints >= threatCosts.LacaioDoVazio) {
-                enemyComposition.LacaioDoVazio++;
-                threatPoints -= threatCosts.LacaioDoVazio;
-              }
+              guaranteedSpecialSpawnedThisWave = true;
             }
           }
         }
 
-        while (threatPoints > 0) {
+        let initialBudget = threatPoints * 0.6;
+
+        while (initialBudget > 0) {
           let spawnedThisIteration = false;
           if (
             e > 3 &&
-            threatPoints >= threatCosts.GuardiaoAnomalo &&
-            Math.random() < 0.25
+            initialBudget >= threatCosts.GuardiaoAnomalo &&
+            Math.random() < 0.3
           ) {
             enemyComposition.GuardiaoAnomalo++;
-            threatPoints -= threatCosts.GuardiaoAnomalo;
-            spawnedThisIteration = true;
-          } else if (
-            e >= orbiterStartWave &&
-            threatPoints >= threatCosts.OrbiterEnemy &&
-            Math.random() < 0.5
-          ) {
-            enemyComposition.OrbiterEnemy++;
-            threatPoints -= threatCosts.OrbiterEnemy;
-            spawnedThisIteration = true;
-          } else if (
-            e >= erraticStartWave &&
-            threatPoints >= threatCosts.ErraticLurker &&
-            Math.random() < 0.4
-          ) {
-            enemyComposition.ErraticLurker++;
-            threatPoints -= threatCosts.ErraticLurker;
-            spawnedThisIteration = true;
-          } else if (
-            e >= dashingStartWave &&
-            threatPoints >= threatCosts.DashingPhantom &&
-            Math.random() < 0.4
-          ) {
-            enemyComposition.DashingPhantom++;
-            threatPoints -= threatCosts.DashingPhantom;
-            spawnedThisIteration = true;
-          } else if (
-            e >= grounderStartWave &&
-            threatPoints >= threatCosts.GroundSkulker &&
-            Math.random() < 0.35
-          ) {
-            enemyComposition.GroundSkulker++;
-            threatPoints -= threatCosts.GroundSkulker;
+            initialBudget -= threatCosts.GuardiaoAnomalo;
             spawnedThisIteration = true;
           } else if (
             e > 1 &&
-            threatPoints >= threatCosts.SentinelaEspectral &&
+            initialBudget >= threatCosts.SentinelaEspectral &&
             Math.random() < 0.4
           ) {
             enemyComposition.SentinelaEspectral++;
-            threatPoints -= threatCosts.SentinelaEspectral;
+            initialBudget -= threatCosts.SentinelaEspectral;
             spawnedThisIteration = true;
-          } else if (threatPoints >= threatCosts.LacaioDoVazio) {
+          } else if (initialBudget >= threatCosts.LacaioDoVazio) {
             enemyComposition.LacaioDoVazio++;
-            threatPoints -= threatCosts.LacaioDoVazio;
+            initialBudget -= threatCosts.LacaioDoVazio;
             spawnedThisIteration = true;
           }
+          if (!spawnedThisIteration) break;
+          threatPoints = initialBudget + threatPoints * 0.4;
+        }
 
-          if (!spawnedThisIteration) {
+        let remainingBudgetForSpecials = threatPoints;
+        const maxSpecialAttempts = 5;
+        let specialAttempts = 0;
+
+        while (
+          remainingBudgetForSpecials > 0 &&
+          specialAttempts < maxSpecialAttempts
+        ) {
+          specialAttempts++;
+          let spawnedSpecialThisIteration = false;
+          const specialCandidates = [];
+          if (
+            e >= orbiterStartWave &&
+            remainingBudgetForSpecials >= threatCosts.OrbiterEnemy
+          )
+            specialCandidates.push({ name: "OrbiterEnemy", chance: 0.5 });
+          if (
+            e >= erraticStartWave &&
+            remainingBudgetForSpecials >= threatCosts.ErraticLurker
+          )
+            specialCandidates.push({ name: "ErraticLurker", chance: 0.4 });
+          if (
+            e >= dashingStartWave &&
+            remainingBudgetForSpecials >= threatCosts.DashingPhantom
+          )
+            specialCandidates.push({ name: "DashingPhantom", chance: 0.4 });
+          if (
+            e >= grounderStartWave &&
+            remainingBudgetForSpecials >= threatCosts.GroundSkulker
+          )
+            specialCandidates.push({ name: "GroundSkulker", chance: 0.35 });
+
+          if (specialCandidates.length === 0) break;
+
+          specialCandidates.sort((a, b) => b.chance - a.chance);
+
+          for (const candidate of specialCandidates) {
+            if (Math.random() < candidate.chance) {
+              enemyComposition[candidate.name]++;
+              remainingBudgetForSpecials -= threatCosts[candidate.name];
+              spawnedSpecialThisIteration = true;
+              break;
+            }
+          }
+          if (
+            !spawnedSpecialThisIteration &&
+            specialCandidates.length > 0 &&
+            remainingBudgetForSpecials >= threatCosts.LacaioDoVazio
+          ) {
+            enemyComposition.LacaioDoVazio++;
+            remainingBudgetForSpecials -= threatCosts.LacaioDoVazio;
+          } else if (!spawnedSpecialThisIteration) {
             break;
           }
+          threatPoints = remainingBudgetForSpecials;
+        }
+
+        while (threatPoints >= threatCosts.LacaioDoVazio) {
+          enemyComposition.LacaioDoVazio++;
+          threatPoints -= threatCosts.LacaioDoVazio;
         }
 
         let totalSpawned = Object.values(enemyComposition).reduce(
@@ -2623,7 +2757,7 @@
           0
         );
         if (e % 5 !== 0 && totalSpawned === 0 && e > 0) {
-          enemyComposition.LacaioDoVazio = 1 + Math.floor(e / 4);
+          enemyComposition.LacaioDoVazio = 1 + Math.floor(e / 3);
         }
 
         return { wave: e, enemies: enemyComposition };
@@ -2640,7 +2774,9 @@
           this.bleedDamage = 0;
           this.hitFlashTimer = 0;
           this.wave = wave;
-          this.scaleFactor = 1 + (this.wave - 1) * 0.1;
+          this.scaleFactor =
+            (1 + (this.wave - 1) * 0.1) *
+            difficultySettings.enemyScalingMultiplier;
           this.currentMoveAngle = Math.random() * Math.PI * 2;
           this.turnCooldown = 0;
           this.timeToTurn = 600 + Math.random() * 400;
@@ -2871,19 +3007,15 @@
         }
         drawHitFlash() {
           if (this.hitFlashTimer > 0) {
-            const flashIntensity = 0.6 + Math.sin(gameTime * 0.05) * 0.2; // Pulsating intensity (0.4 to 0.8)
+            const flashIntensity = 0.6 + Math.sin(gameTime * 0.05) * 0.2;
             ctx.save();
             ctx.globalAlpha = flashIntensity;
 
-            // All enemies get a base rectangular flash (subtle)
-            // This ensures even aura enemies have their sprite flash a bit
-            // and provides a fallback if aura drawing isn't perfect.
-            ctx.fillStyle = "rgba(255, 255, 255, 0.4)"; // More subtle white for the rectangle
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
             ctx.fillRect(this.x, this.y, this.width, this.height);
-            
-            // If it has an aura, draw an additional, more prominent aura flash
-            if (this.auraColor && typeof this.drawAura === 'function') { // Check if a specific drawAura method exists
-                this.drawAura(true, flashIntensity * 1.5); // Pass a flag indicating it's a flash
+
+            if (this.auraColor && typeof this.drawAura === "function") {
+              this.drawAura(true, flashIntensity * 1.5);
             }
             ctx.restore();
           }
@@ -2921,10 +3053,30 @@
           const centerX = this.x + this.width / 2;
           const centerY = this.y + this.height / 2;
           const baseParticleCount = 25 + Math.floor(this.width / 3);
-          const explosionColor = this.auraColor ? this.auraColor.replace(/,\s*\d?\.?\d+\)/, ', 0.8)') : "rgba(220, 220, 240, 0.8)"; // Use aura color or light grey/blue
-          
-          createExplosion(centerX, centerY, explosionColor, baseParticleCount, 5, 60, 0.8, 0.4);
-          createExplosion(centerX, centerY, "rgba(255, 255, 255, 0.9)", Math.floor(baseParticleCount / 3), 8, 30, 0.5, 0.3);
+          const explosionColor = this.auraColor
+            ? this.auraColor.replace(/,\s*\d?\.?\d+\)/, ", 0.8)")
+            : "rgba(220, 220, 240, 0.8)";
+
+          createExplosion(
+            centerX,
+            centerY,
+            explosionColor,
+            baseParticleCount,
+            5,
+            60,
+            0.8,
+            0.4
+          );
+          createExplosion(
+            centerX,
+            centerY,
+            "rgba(255, 255, 255, 0.9)",
+            Math.floor(baseParticleCount / 3),
+            8,
+            30,
+            0.5,
+            0.3
+          );
           soundManager.playEnemyDieSound(),
             player.gainExp(this.expValue),
             Math.random() < 0.8 &&
@@ -2958,7 +3110,12 @@
                     this.x + this.width / 2,
                     this.y + this.height / 2,
                     o,
-                    Math.max(1, Math.floor(player.stats.projectileDamage / 6 + player.level / 2))
+                    Math.max(
+                      1,
+                      Math.floor(
+                        player.stats.projectileDamage / 6 + player.level / 2
+                      )
+                    )
                   )
                 );
               }),
@@ -3169,6 +3326,123 @@
         die() {
           super.die();
           player.gainRandomRareUpgrade();
+          if (!undergoingBossDefeatTransition) {
+            undergoingBossDefeatTransition = true;
+            gameState = "transitioning";
+
+            const centerX = this.x + this.width / 2;
+            const centerY = this.y + this.height / 2;
+            createExplosion(
+              centerX,
+              centerY,
+              this.color || "#ff0000",
+              80,
+              8,
+              90,
+              1,
+              0.5
+            );
+            createExplosion(
+              centerX,
+              centerY,
+              "rgba(255, 200, 100, 0.8)",
+              60,
+              6,
+              120,
+              0.8,
+              0.6
+            );
+            createExplosion(
+              centerX,
+              centerY,
+              "rgba(255, 255, 255, 0.9)",
+              40,
+              10,
+              60,
+              0.6,
+              0.3
+            );
+
+            let shakeDuration = 800;
+            let shakeMagnitude = 10;
+            let shakeStartTime = performance.now();
+
+            function applyShake() {
+              const elapsedTime = performance.now() - shakeStartTime;
+              if (elapsedTime < shakeDuration) {
+                const progress = elapsedTime / shakeDuration;
+                const currentMagnitude = shakeMagnitude * (1 - progress);
+                const x = (Math.random() - 0.5) * 2 * currentMagnitude;
+                const y = (Math.random() - 0.5) * 2 * currentMagnitude;
+                canvas.style.transform = `translate(${x}px, ${y}px)`;
+                requestAnimationFrame(applyShake);
+              } else {
+                canvas.style.transform = "translate(0px, 0px)";
+              }
+            }
+            applyShake();
+
+            const transitionOverlay = d.getElementById(
+              "sceneTransitionOverlay"
+            );
+
+            setTimeout(() => {
+              transitionOverlay.style.visibility = "visible";
+              transitionOverlay.style.opacity = "1";
+            }, 600);
+
+            setTimeout(() => {
+              currentStarfieldConfig++;
+              Starfield.init();
+
+              const groundColors = ["#2a1a3a", "#3a2a1a", "#1a3a2a", "#3a3a1a"];
+              const groundStrokeColors = [
+                "#b6599b",
+                "#b69b59",
+                "#59b69b",
+                "#9bb659",
+              ];
+              const colorIndex = currentStarfieldConfig % groundColors.length;
+              currentGroundColor = groundColors[colorIndex];
+              currentGroundStrokeColor = groundStrokeColors[colorIndex];
+
+              generateGround();
+              generatePlatforms();
+
+              transitionOverlay.style.opacity = "0";
+              const onTransitionEnd = () => {
+                transitionOverlay.style.visibility = "hidden";
+                transitionOverlay.removeEventListener(
+                  "transitionend",
+                  onTransitionEnd
+                );
+
+                player.gainExp(player.expToNextLevel * 1.1 + 10);
+
+                undergoingBossDefeatTransition = false;
+                gameState = "playing";
+                let nextState = "intermission";
+                if (player.isLevelingUp && gameState === "levelUp") {
+                  nextState = "levelUp";
+                } else {
+                  gameState = "playing";
+                }
+
+                lastTime = performance.now();
+
+                if (nextState === "levelUp") {
+                } else {
+                  gameState = "playing";
+                  requestAnimationFrame(gameLoop);
+                }
+              };
+              transitionOverlay.addEventListener(
+                "transitionend",
+                onTransitionEnd
+              );
+              setTimeout(onTransitionEnd, 500);
+            }, 600);
+          }
         }
 
         executeAttack() {
@@ -3459,7 +3733,7 @@
 
         draw() {
           super.draw();
-          if (this.auraColor && this.state !== 'descending') {
+          if (this.auraColor && this.state !== "descending") {
             ctx.save();
             ctx.globalAlpha = this.isDashing ? 0.9 : 0.7;
             ctx.fillStyle = this.auraColor;
@@ -3626,16 +3900,22 @@
         }
 
         draw() {
-          super.draw(); // This will call Enemy.drawHealthBar() and Enemy.drawHitFlash()
-          if (this.auraColor && this.state !== 'descending') { // Don't draw aura while descending
-              ctx.save();
-              ctx.globalAlpha = 0.4; // Base aura opacity
-              ctx.fillStyle = this.auraColor;
-              ctx.beginPath();
-              const auraVisualRadius = Math.max(this.width, this.height) * 0.5; // Visual radius of the persistent aura
-              ctx.arc(this.x + this.width / 2, this.y + this.height / 2, auraVisualRadius, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.restore();
+          super.draw();
+          if (this.auraColor && this.state !== "descending") {
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = this.auraColor;
+            ctx.beginPath();
+            const auraVisualRadius = Math.max(this.width, this.height) * 0.5;
+            ctx.arc(
+              this.x + this.width / 2,
+              this.y + this.height / 2,
+              auraVisualRadius,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+            ctx.restore();
           }
         }
       }
@@ -3672,18 +3952,31 @@
           this.x += separationX * this.speed * 0.5 * this.slowFactor;
 
           if (this.state === "seeking_burrow_spot") {
-            this.targetBurrowX = player.x + (Math.random() - 0.5) * 100;
-            const angleToTargetX = Math.atan2(0, this.targetBurrowX - this.x);
-            this.x += Math.cos(angleToTargetX) * this.speed * this.slowFactor;
-            this.y += this.speed * 0.5 * this.slowFactor;
+            const targetX = player.x + player.width / 2 - this.width / 2;
+            const targetY = this.y + this.speed * 0.3 * this.slowFactor;
 
-            if (this.y + this.height > canvas.height - 30) {
-              this.y = canvas.height - 30 - this.height;
+            const angleToTarget = Math.atan2(
+              targetY - this.y,
+              targetX - this.x
+            );
+
+            this.x +=
+              Math.cos(angleToTarget) * this.speed * 0.5 * this.slowFactor;
+            this.y +=
+              Math.sin(angleToTarget) * this.speed * 0.5 * this.slowFactor;
+
+            if (this.y < this.chaseHeight * 0.7)
+              this.y = this.chaseHeight * 0.7;
+            if (this.y + this.height > canvas.height + this.height / 2) {
+              this.y = canvas.height + this.height / 2 - this.height;
             }
 
             if (
-              Math.abs(this.x - this.targetBurrowX) < this.width &&
-              this.burrowCooldown <= 0
+              Math.abs(
+                this.x + this.width / 2 - (player.x + player.width / 2)
+              ) < 150 &&
+              this.burrowCooldown <= 0 &&
+              this.y > player.y
             ) {
               this.state = "burrowing";
               this.isBurrowed = true;
@@ -3755,18 +4048,42 @@
             this.state === "rising_to_attack" ||
             this.state === "attacking_from_below"
           ) {
-            super.draw(); // This will call Enemy.drawHealthBar() and Enemy.drawHitFlash()
-            if (this.auraColor) { // Don't draw aura while descending
-                ctx.save();
-                ctx.globalAlpha = 0.4; // Base aura opacity
-                ctx.fillStyle = this.auraColor;
-                ctx.beginPath();
-                const auraVisualRadius = Math.max(this.width, this.height) * 0.5; // Visual radius of the persistent aura
-                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, auraVisualRadius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
+            super.draw();
+            if (this.auraColor) {
+              ctx.save();
+              ctx.globalAlpha = 0.4;
+              ctx.fillStyle = this.auraColor;
+              ctx.beginPath();
+              const auraVisualRadius = Math.max(this.width, this.height) * 0.5;
+              ctx.arc(
+                this.x + this.width / 2,
+                this.y + this.height / 2,
+                auraVisualRadius,
+                0,
+                Math.PI * 2
+              );
+              ctx.fill();
+              ctx.restore();
             }
-          } else {
+          } else if (this.isBurrowed && this.state === "waiting_below") {
+            ctx.save();
+            const groundY = getGroundHeight(this.x + this.width / 2);
+            const disturbanceRadius = this.width * 0.4;
+            ctx.fillStyle = "rgba(100, 80, 50, 0.5)";
+            ctx.beginPath();
+            for (let i = 0; i < 3; i++) {
+              ctx.arc(
+                this.x +
+                  this.width / 2 +
+                  (Math.random() - 0.5) * disturbanceRadius * 0.5,
+                groundY - 5 - Math.random() * 5,
+                disturbanceRadius * (0.5 + Math.random() * 0.5),
+                0,
+                Math.PI * 2
+              );
+            }
+            ctx.fill();
+            ctx.restore();
           }
         }
         die() {
@@ -3929,23 +4246,24 @@
               }
             }
             if (closestEnemy) {
-              const newAngle = Math.atan2(closestEnemy.y + closestEnemy.height / 2 - this.y, closestEnemy.x + closestEnemy.width / 2 - this.x);
+              const newAngle = Math.atan2(
+                closestEnemy.y + closestEnemy.height / 2 - this.y,
+                closestEnemy.x + closestEnemy.width / 2 - this.x
+              );
               this.angle = newAngle;
               this.vx = Math.cos(newAngle) * this.speed;
               this.vy = Math.sin(newAngle) * this.speed;
-              // On first jump, damage becomes 30% of its damage before this jump.
-              // Subsequent jumps from this same projectile will be 30% of the *already reduced* damage.
-              this.damage *= 0.30; 
-              return; 
+              this.damage *= 0.3;
+              return;
             }
           }
 
           if (this.pierceLeft > 1) {
-            this.damage *= 0.80;
+            this.damage *= 0.8;
           }
-          
+
           this.pierceLeft--;
-          if (this.pierceLeft < 1) { 
+          if (this.pierceLeft < 1) {
             this.active = false;
           }
         }
@@ -3999,11 +4317,22 @@
             (ctx.globalAlpha = 1);
         }
       }
-      function createExplosion(e, t, o = "#fff", count = 15, baseSpeed = 4, life = 50, speedVariation = 0.5, lifeVariation = 0.5) {
+      function createExplosion(
+        e,
+        t,
+        o = "#fff",
+        count = 15,
+        baseSpeed = 4,
+        life = 50,
+        speedVariation = 0.5,
+        lifeVariation = 0.5
+      ) {
         for (let s = 0; s < count; s++) {
-            const speedMult = baseSpeed * (1 + (Math.random() - 0.5) * speedVariation);
-            const particleLife = life * (1 + (Math.random() - 0.5) * lifeVariation);
-            particles.push(new Particle(e, t, o, speedMult, particleLife));
+          const speedMult =
+            baseSpeed * (1 + (Math.random() - 0.5) * speedVariation);
+          const particleLife =
+            life * (1 + (Math.random() - 0.5) * lifeVariation);
+          particles.push(new Particle(e, t, o, speedMult, particleLife));
         }
       }
       class Orb {
@@ -4085,6 +4414,9 @@
             (this.y = e.y),
             (this.angle = 0),
             (this.shootCooldown = 0);
+          this.laserDamageTick = 0;
+          this.laserTarget = null;
+          this.laserVisualAngle = 0;
         }
         update(e) {
           this.angle += 0.02;
@@ -4094,26 +4426,75 @@
           (this.x += 0.1 * (t - this.x)),
             (this.y += 0.1 * (o - this.y)),
             this.shootCooldown > 0 && (this.shootCooldown -= e);
-          if (enemies.length > 0 && this.shootCooldown <= 0) {
+          this.laserDamageTick > 0 && (this.laserDamageTick -= e);
+
+          if (
+            this.owner.stats.laserBeam &&
+            this.laserDamageTick <= 0 &&
+            enemies.length > 0
+          ) {
+            this.laserDamageTick = 350;
+
+            let closestEnemy = null;
+            let minDistance = Infinity;
+            enemies.forEach((enemy) => {
+              if (enemy.hp > 0) {
+                const distance = Math.hypot(
+                  this.x - enemy.x - enemy.width / 2,
+                  this.y - enemy.y - enemy.height / 2
+                );
+                if (distance < minDistance) {
+                  minDistance = distance;
+                  closestEnemy = enemy;
+                }
+              }
+            });
+            this.laserTarget = closestEnemy;
+
+            if (this.laserTarget) {
+              this.laserVisualAngle = Math.atan2(
+                this.laserTarget.y + this.laserTarget.height / 2 - this.y,
+                this.laserTarget.x + this.laserTarget.width / 2 - this.x
+              );
+              this.laserTarget.takeDamage(
+                this.owner.stats.projectileDamage / 5,
+                Math.random() < this.owner.stats.critChance
+              );
+            } else {
+              this.laserTarget = null;
+            }
+          } else if (!this.owner.stats.laserBeam || enemies.length === 0) {
+            this.laserTarget = null;
+          }
+
+          if (
+            !this.laserTarget &&
+            enemies.length > 0 &&
+            this.shootCooldown <= 0
+          ) {
             let i = enemies.reduce((e, t) =>
               Math.hypot(t.x - this.x, t.y - this.y) <
               Math.hypot(e.x - this.x, e.y - this.y)
                 ? t
                 : e
             );
-            i &&
-              (this.shoot(i),
-              (this.shootCooldown = 2 * this.owner.stats.attackSpeed));
+            if (i) {
+              this.shoot(i);
+              this.shootCooldown = 2 * this.owner.stats.attackSpeed;
+            }
           }
         }
         shoot(e) {
-          const t = Math.atan2(e.y - this.y, e.x - this.x);
+          const t = Math.atan2(
+            e.y + e.height / 2 - this.y,
+            e.x + e.width / 2 - this.x
+          );
           pProjs.push(
             new PlayerProjectile(
-              this.x + 10 * Math.cos(t),
-              this.y + 10 * Math.sin(t),
+              this.x,
+              this.y,
               t,
-              player.stats.projectileDamage / 2
+              this.owner.stats.projectileDamage / 2
             )
           );
         }
@@ -4125,6 +4506,31 @@
             ctx.arc(this.x, this.y, 10, 0, 2 * Math.PI),
             ctx.fill(),
             ctx.stroke();
+
+          if (
+            this.owner.stats.laserBeam &&
+            this.laserTarget &&
+            this.laserDamageTick > 350 - 50
+          ) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            const laserDisplayLength =
+              Math.hypot(
+                this.laserTarget.x + this.laserTarget.width / 2 - this.x,
+                this.laserTarget.y + this.laserTarget.height / 2 - this.y
+              ) + 50;
+            ctx.lineTo(
+              this.x + Math.cos(this.laserVisualAngle) * laserDisplayLength,
+              this.y + Math.sin(this.laserVisualAngle) * laserDisplayLength
+            );
+            ctx.strokeStyle = "rgba(200, 100, 255, 0.7)";
+            ctx.lineWidth = 2 + Math.random();
+            ctx.shadowColor = "rgba(200, 100, 255, 0.5)";
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.restore();
+          }
         }
       }
       function formatTime(t) {
@@ -4137,19 +4543,82 @@
         return `${e}:${o}`;
       }
       const Leaderboard = {
+        currentDifficulty: "Normal",
+        getLeaderboardKey() {
+          return `voidSurvivorLeaderboard_${this.currentDifficulty}`;
+        },
         show() {
           this.loadAndDisplayScores("leaderboard-list");
+          this.loadAndDisplayScores("leaderboard-list-main", true);
         },
-        loadAndDisplayScores(e) {
-          const t = d.getElementById(e);
-          if (!t) return;
+        loadAndDisplayScores(elementId, isMainLeaderboardScreen = false) {
+          const listElement = d.getElementById(elementId);
+          if (!listElement) return;
+
+          if (
+            isMainLeaderboardScreen &&
+            d.getElementById("leaderboardScreen").contains(listElement)
+          ) {
+            let selectorContainer = d.getElementById(
+              "difficulty-selector-container"
+            );
+            if (!selectorContainer) {
+              selectorContainer = d.createElement("div");
+              selectorContainer.id = "difficulty-selector-container";
+              selectorContainer.style.marginBottom = "15px";
+              const title = d.createElement("p");
+              title.innerText = "Ver Placar Para:";
+              title.style.fontSize = "0.9em";
+              selectorContainer.appendChild(title);
+
+              const difficulties = ["Fácil", "Normal", "Difícil"];
+              difficulties.forEach((diff) => {
+                const btn = d.createElement("button");
+                btn.className = "btn";
+                btn.innerText = diff;
+                btn.style.fontSize = "0.8em";
+                btn.style.padding = "8px 12px";
+                btn.onclick = () => {
+                  soundManager.playUIClickSound();
+                  this.currentDifficulty = diff;
+                  this.loadAndDisplayScores("leaderboard-list-main", true);
+                };
+                if (diff === this.currentDifficulty) {
+                  btn.style.borderColor = "#f1c40f";
+                }
+                selectorContainer.appendChild(btn);
+              });
+              const leaderboardContainer = listElement.closest(
+                ".leaderboard-container"
+              );
+              if (leaderboardContainer) {
+                leaderboardContainer.insertBefore(
+                  selectorContainer,
+                  leaderboardContainer.firstChild.nextSibling
+                );
+              } else {
+                listElement.parentNode.insertBefore(
+                  selectorContainer,
+                  listElement
+                );
+              }
+            }
+            Array.from(
+              selectorContainer.getElementsByTagName("button")
+            ).forEach((btn) => {
+              btn.style.borderColor =
+                btn.innerText === this.currentDifficulty ? "#f1c40f" : "#fff";
+            });
+          }
+
           try {
-            const o = localStorage.getItem("voidSurvivorLeaderboard"),
-              i = o ? JSON.parse(o) : [];
-            t.innerHTML =
-              0 === i.length
+            const key = this.getLeaderboardKey();
+            const scoresData = localStorage.getItem(key);
+            const scores = scoresData ? JSON.parse(scoresData) : [];
+            listElement.innerHTML =
+              0 === scores.length
                 ? "<li>Nenhuma pontuação ainda. Seja o primeiro!</li>"
-                : i
+                : scores
                     .map(
                       (e) =>
                         `<li><span>${e.name}</span><span>${e.score}${
@@ -4158,8 +4627,8 @@
                     )
                     .join("");
           } catch (o) {
-            (t.innerHTML = "<li>Erro ao carregar pontuações.</li>"),
-              console.error(o);
+            listElement.innerHTML = "<li>Erro ao carregar pontuações.</li>";
+            console.error(o);
           }
         },
         submitScore() {
@@ -4173,19 +4642,18 @@
             );
           d.getElementById("submitScoreBtn").disabled = !0;
           try {
-            const i = localStorage.getItem("voidSurvivorLeaderboard");
-            let s = i ? JSON.parse(i) : [];
+            const key = this.getLeaderboardKey();
+            const scoresData = localStorage.getItem(key);
+            let s = scoresData ? JSON.parse(scoresData) : [];
             s.push({ name: o, score: score, time: runTimer }),
               s.sort((e, t) => t.score - e.score),
               s.length > 10 && (s = s.slice(0, 10)),
-              localStorage.setItem(
-                "voidSurvivorLeaderboard",
-                JSON.stringify(s)
-              ),
+              localStorage.setItem(key, JSON.stringify(s)),
               (t.textContent = "Pontuação enviada!"),
               (t.className = ""),
               (d.getElementById("score-submission").style.display = "none"),
               this.loadAndDisplayScores("leaderboard-list");
+            this.loadAndDisplayScores("leaderboard-list-main", true);
           } catch (i) {
             (t.textContent = "Falha ao enviar pontuação."),
               (t.className = "error"),
@@ -4194,12 +4662,18 @@
           }
         },
         clearScores() {
-          try {
-            localStorage.removeItem("voidSurvivorLeaderboard"),
-              this.loadAndDisplayScores("leaderboard-list-main"),
+          if (
+            confirm(
+              `Limpar placar para dificuldade "${this.currentDifficulty}"?`
+            )
+          ) {
+            try {
+              localStorage.removeItem(this.getLeaderboardKey());
+              this.loadAndDisplayScores("leaderboard-list-main", true);
               this.loadAndDisplayScores("leaderboard-list");
-          } catch (e) {
-            console.error(e);
+            } catch (e) {
+              console.error(e);
+            }
           }
         },
       };
@@ -4285,7 +4759,6 @@
           (gameState = "levelUp"),
           (levelUpScreen.style.display = "flex"),
           (d.getElementById("autofire-indicator").style.display = "none"),
-          (d.getElementById("right-ui-container").style.opacity = "0"),
           (upgradeCardsContainer.innerHTML = "");
         let e = [];
         const t = player.stats.upgradeChoices,
@@ -4383,7 +4856,8 @@
           (gameState = "playing"),
           (levelUpScreen.style.display = "none"),
           (player.isLevelingUp = false),
-          (d.getElementById("right-ui-container").style.opacity = "0.7"),
+          (d.getElementById("right-ui-container").style.opacity =
+            gameData.showInventory ? "0.7" : "0"),
           updateAutofireIndicator(),
           (lastTime = performance.now()),
           requestAnimationFrame(gameLoop);
@@ -4432,7 +4906,7 @@
       }
       function drawGround() {
         if (groundSegments.length === 0) return;
-        (ctx.fillStyle = "#1a1a2a"),
+        (ctx.fillStyle = currentGroundColor),
           ctx.beginPath(),
           ctx.moveTo(0, canvas.height),
           ctx.lineTo(0, groundSegments[0].y);
@@ -4440,7 +4914,7 @@
         ctx.lineTo(canvas.width, canvas.height),
           ctx.closePath(),
           ctx.fill(),
-          (ctx.strokeStyle = "#9b59b6"),
+          (ctx.strokeStyle = currentGroundStrokeColor),
           (ctx.lineWidth = 2.5),
           ctx.beginPath(),
           ctx.moveTo(0, groundSegments[0].y);
@@ -4457,8 +4931,8 @@
         });
       }
       function drawPlatforms() {
-        ctx.fillStyle = "#1a1a2a";
-        ctx.strokeStyle = "#9b59b6";
+        ctx.fillStyle = currentGroundColor;
+        ctx.strokeStyle = currentGroundStrokeColor;
         ctx.lineWidth = 2.5;
         platforms.forEach((p) => {
           ctx.beginPath();
@@ -4473,7 +4947,7 @@
           gameData.showInventory ? "block" : "none";
       }
       function gameLoop(e) {
-        if ("playing" !== gameState) {
+        if ("playing" !== gameState && "transitioning" !== gameState) {
           if (gameState === "gameOver" || gameState === "victory") {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             Starfield.draw();
@@ -4497,17 +4971,17 @@
           player.update(t),
           wisp && wisp.update(t),
           Starfield.update(gameData.parallaxEnabled ? player.vx : 0),
-          updateWaveSystem(t),
-          handleThunderbolts(t),
-          [
-            enemies,
-            pProjs,
-            eProjs,
-            particles,
-            orbs,
-            dNums,
-            lightningBolts,
-          ].forEach((e) => e.forEach((e) => e.update(t))),
+          updateWaveSystem(t);
+        handleThunderbolts(t);
+        [
+          enemies,
+          pProjs,
+          eProjs,
+          particles,
+          orbs,
+          dNums,
+          lightningBolts,
+        ].forEach((e) => e.forEach((e) => e.update(t))),
           pProjs.forEach((e) =>
             enemies.forEach((t) => {
               e.active &&
@@ -4599,6 +5073,8 @@
           (player = new Player()),
           (player.isLevelingUp = false),
           updateInventoryUI(),
+          (d.getElementById("right-ui-container").style.opacity =
+            gameData.showInventory ? "0.7" : "0"),
           updateAutofireIndicator(),
           (gameOverScreen.style.display = "none"),
           (pauseScreen.style.display = "none"),
@@ -4700,28 +5176,37 @@
         const o = Array.from(t);
         let i = 0;
         if (0 === o.length) return void e();
-        (startButton.innerText = "Carregando..."),
-          (startButton.disabled = !0),
-          o.forEach((t) => {
-            const s = new Image();
-            (s.src = `img/${t}`),
-              (spriteImages[t] = s),
-              (s.onload = () => {
-                i++,
-                  i === o.length &&
-                    ((startButton.innerText = "Iniciar Jogo"),
-                    (startButton.disabled = !1),
-                    e());
-              }),
-              (s.onerror = () => {
-                console.error(`Erro ao carregar: img/${t}`),
-                  i++,
-                  i === o.length &&
-                    ((startButton.innerText = "Iniciar Jogo"),
-                    (startButton.disabled = !1),
-                    e());
-              });
-          });
+        if (goToDifficultyButton) {
+          goToDifficultyButton.innerText = "Carregando...";
+          goToDifficultyButton.disabled = true;
+        }
+
+        o.forEach((t) => {
+          const s = new Image();
+          (s.src = `img/${t}`),
+            (spriteImages[t] = s),
+            (s.onload = () => {
+              i++;
+              if (i === o.length) {
+                if (goToDifficultyButton) {
+                  goToDifficultyButton.innerText = "Iniciar Jogo";
+                  goToDifficultyButton.disabled = false;
+                }
+                e();
+              }
+            }),
+            (s.onerror = () => {
+              console.error(`Erro ao carregar: img/${t}`);
+              i++;
+              if (i === o.length) {
+                if (goToDifficultyButton) {
+                  goToDifficultyButton.innerText = "Iniciar Jogo";
+                  goToDifficultyButton.disabled = false;
+                }
+                e();
+              }
+            });
+        });
       }
       const switchScreen = (e, t, o) => {
         e && (e.style.display = "none"),
@@ -4997,6 +5482,44 @@
         d.getElementById("wikiSearchBox").addEventListener("input", (e) => {
           populateWiki(e.target.value);
         });
+
+        goToDifficultyButton.addEventListener("click", () => {
+          soundManager.playUIClickSound();
+          switchScreen(splashScreen, "difficultyScreen");
+        });
+
+        difficultyBackButton.addEventListener("click", () => {
+          soundManager.playUIClickSound();
+          switchScreen(difficultyScreen, "splashScreen");
+        });
+
+        function setDifficultyAndStart(
+          difficultyName,
+          threatMult,
+          enemyScaleMult
+        ) {
+          selectedDifficultyName = difficultyName;
+          difficultySettings.threatMultiplier = threatMult;
+          difficultySettings.enemyScalingMultiplier = enemyScaleMult;
+          soundManager.init();
+          switchScreen(difficultyScreen, null, "playing");
+          startGameSequence();
+          Leaderboard.currentDifficulty = selectedDifficultyName;
+          Leaderboard.show();
+        }
+
+        difficultyEasy.addEventListener("click", () => {
+          setDifficultyAndStart("Fácil", 0.75, 0.8);
+        });
+        difficultyNormal.addEventListener("click", () => {
+          setDifficultyAndStart("Normal", 1.0, 1.0);
+        });
+        difficultyHard.addEventListener("click", () => {
+          setDifficultyAndStart("Difícil", 1.35, 1.2);
+        });
+        difficultyCustom.addEventListener("click", () => {
+          alert("Dificuldade Customizada ainda não implementada!");
+        });
       }
 
       function showVictoryScreen() {
@@ -5062,14 +5585,10 @@
           updateAllToggleButtons(),
           populateWiki(),
           loadAssets(() => {
-            startButton.addEventListener("click", () => {
-              soundManager.init(),
-                switchScreen(splashScreen, null, "playing"),
-                startGameSequence();
-            }),
-              d
-                .getElementById("resetProgressButton")
-                .addEventListener("click", resetProgress),
+            d.getElementById("resetProgressButton");
+            d
+              .getElementById("resetProgressButton")
+              .addEventListener("click", resetProgress),
               d
                 .getElementById("unlockAllHatsButton")
                 .addEventListener("click", unlockAllHats);
