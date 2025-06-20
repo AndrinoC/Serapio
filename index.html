@@ -197,7 +197,7 @@
       }
       #top-ui-container {
         position: absolute;
-        top: 0;
+        top: 10px;
         left: 0;
         width: 100%;
         z-index: 10;
@@ -208,6 +208,10 @@
         border-radius: 0;
         box-shadow: none;
         margin: 0;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       #left-ui-container {
         position: absolute;
@@ -349,8 +353,8 @@
       #levelUpFlash.active {
         animation: flash-effect 0.8s ease-out;
       }
-      #levelUpScreen,
       #gameOverScreen,
+      #levelUpScreen,
       #pauseScreen,
       #splashHatShopScreen,
       #leaderboardScreen {
@@ -768,6 +772,12 @@
       #toggleInventoryButton:hover {
         background-color: rgba(0, 255, 255, 0.2);
       }
+      #levelUpScreen #toggleInventoryButton {
+        bottom: auto;
+        right: auto;
+        top: 20px;
+        left: 20px;
+      }
       #controls-guide {
         position: absolute;
         top: 60vh;
@@ -890,10 +900,10 @@
     </div>
 
     <canvas id="gameCanvas"></canvas>
-
-    <div id="top-ui-container">
-      <div id="exp-bar-container" class="bar-container">
+      <div id="top-ui-container">
+        <div id="exp-bar-container" class="bar-container">
         <div id="exp-bar" class="bar"></div>
+        <span id="exp-bar-text" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.7em; color: #fff; text-shadow: 1px 1px 2px #000; z-index: 1;">0/0 (0%)</span>
       </div>
     </div>
 
@@ -1042,7 +1052,6 @@
           }
         }
 
-        // Função aprimorada para tocar osciladores com pitch sweep
         playSound(
           freqStart,
           freqEnd,
@@ -1070,7 +1079,6 @@
           osc.stop(now + duration);
         }
 
-        // Nova função para tocar ruído (ótimo para impactos e explosões)
         playNoise(duration, filterFreq, volume = 0.5, filterType = "bandpass") {
           if (!gameData.soundEnabled || !this.audioContext) return;
           const bufferSize = this.audioContext.sampleRate * duration;
@@ -1104,50 +1112,45 @@
           noise.stop(now + duration);
         }
 
-        // --- Novos sons, mais satisfatórios ---
 
         playShootSound() {
-          // Um "pew" com pitch sweep e um clique agudo
           this.playSound(1200, 400, 0.1, "sawtooth", 0.3);
-          this.playNoise(0.05, 4000, 0.2, "highpass");
+          this.playSound(800, 1200, 0.05, "sine", 0.2);
+          this.playSound(1000, 300, 0.1, "sawtooth", 0.25);
+          this.playNoise(0.08, 1500, 0.15, "bandpass");
         }
 
         playEnemyHitSound() {
-          // Um "thud" grave com um "crack" agudo
-          this.playSound(150, 50, 0.15, "square", 0.4);
-          this.playNoise(0.1, 2500, 0.3, "highpass");
+          this.playSound(200, 100, 0.12, "sine", 0.35);
+          this.playNoise(0.1, 800, 0.25, "bandpass");
         }
         
         playPlayerDamageSound() {
-          // Um som grave, distorcido e alarmante
-          this.playSound(120, 40, 0.4, "sawtooth", 0.6);
-          this.playNoise(0.4, 500, 0.2, "lowpass");
+          this.playSound(100, 30, 0.3, "triangle", 0.5);
+          this.playNoise(0.35, 200, 0.3, "lowpass");
+          this.playNoise(0.2, 3000, 0.15, "highpass");
         }
 
         playJumpSound() {
-          // Um "boing" rápido com pitch sweep para cima
-          this.playSound(300, 800, 0.12, "sine", 0.4);
+          this.playSound(400, 900, 0.15, "sine", 0.3);
+          this.playNoise(0.05, 2000, 0.1, "bandpass", 0.8);
         }
 
         playEnemyDieSound() {
-          // Uma pequena explosão grave
-          this.playSound(200, 20, 0.2, "sawtooth", 0.5);
-          this.playNoise(0.2, 300, 0.4, "lowpass");
+          this.playSound(150, 50, 0.25, "sine", 0.4);
+          this.playNoise(0.3, 500, 0.3, "bandpass");
         }
 
         playCollectOrbSound() {
-          // Um som mágico e rápido, subindo o tom
           this.playSound(800, 1600, 0.1, "triangle", 0.3);
           this.playSound(1200, 2400, 0.1, "sine", 0.2);
         }
 
         playHealSound() {
-          // Som ascendente e positivo
           this.playSound(500, 1000, 0.3, "sine", 0.5);
           this.playSound(750, 1500, 0.3, "sine", 0.5);
         }
 
-        // Sons que já estavam bons, mantidos
         playLevelUpSound() {
           this.playSound(100, 1000, 0.4, 'sawtooth', 0.4);
           this.playSound(880, 1760, 0.4, 'sine', 0.5);
@@ -1388,23 +1391,21 @@
         groundSegments.length = 0;
         const segmentWidth = 40;
         let currentY = canvas.height -50;
-        const staircaseStartPoint = canvas.width * 0.8; // Inicia a escada em 70% do mapa
+        const staircaseStartPoint = canvas.width * 0.8;
         const stepHeight = Math.random() * 35 - 15;
 
         for (let currentX = 0; currentX < canvas.width; currentX += segmentWidth) {
           if (currentX < staircaseStartPoint) {
-            // Parte aleatória do chão
             groundSegments.push({ x: currentX, y: currentY, width: segmentWidth });
             if (Math.random() < 0.4) {
-              currentY += Math.random() * 70 - 30; // Variação de -40 a +40
+              currentY += Math.random() * 70 - 30;
               currentY = Math.max(
-                canvas.height - 150, // <-- Valor alterado de 200 para 150
+                canvas.height - 150,
                 Math.min(canvas.height - 50, currentY)
               );
             }
           } else {
-            // Parte da escada
-            currentY -= stepHeight; // Sobe um degrau
+            currentY -= stepHeight;
             groundSegments.push({ x: currentX, y: currentY, width: segmentWidth });
           }
         }
@@ -1462,7 +1463,7 @@
         },
         {
           name: "Raio Desintegrador",
-          description: "Substitui seus ataques por um raio laser contínuo que causa dano rapidamente onde você mira.",
+          description: "Adiciona um raio laser contínuo que causa dano onde você mira, além dos seus ataques normais.",
           rarity: "rare",
           icon: "rare.png",
           apply: (e) => (e.stats.laserBeam = true),
@@ -1478,7 +1479,12 @@
         },
         {
           name: "Salto Voltaico",
-          description: "Ao atingir um inimigo, seu projétil salta para o inimigo mais próximo. +1 salto por nível.",
+          description: "Ao atingir um inimigo, seu projétil salta para o inimigo mais próximo.",
+          generatesNextLevelDescription: (currentPlayerStats, currentLevel) => {
+            const currentJumps = currentPlayerStats.chainJumps || 0;
+            const nextJumps = currentJumps + 1;
+            return `Permite que o projétil salte para inimigos próximos. Saltos atuais: ${currentJumps} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextJumps}</span>.`;
+          },
           rarity: "rare",
           icon: "rare.png",
           apply: (e) => (e.stats.chainJumps = (e.stats.chainJumps || 0) + 1),
@@ -1554,15 +1560,20 @@
           rarity: "rare",
           icon: "sanguessuga2.png",
           apply: (e) => (e.stats.lifeSteal += 0.09),
-        },
-        {
-          name: "Fúria Celestial",
-          description: "Chama 2 relâmpagos do céu a cada 5s",
-          rarity: "uncommon",
-          icon: "relampago.png",
-          apply: (e) => (e.stats.thunderboltCount += 2),
-        },
-        {
+          },
+          {
+            name: "Fúria Celestial",
+            description: "Chama relâmpagos do céu a cada 5s.",
+            generatesNextLevelDescription: (currentPlayerStats, currentLevel) => {
+              const currentBolts = currentPlayerStats.thunderboltCount || 0;
+              const nextBolts = currentBolts + 2;
+              return `Chama relâmpagos do céu a cada 5s. Relâmpagos atuais: ${currentBolts} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextBolts}</span>.`;
+            },
+            rarity: "uncommon",
+            icon: "relampago.png",
+            apply: (e) => (e.stats.thunderboltCount = (e.stats.thunderboltCount || 0) + 2),
+          },
+          {
           name: "Fúria Celestial +",
           description: "Chama 6 relâmpagos do céu a cada 5s",
           rarity: "rare",
@@ -1607,7 +1618,12 @@
         },
         {
           name: "Lâmina Perfurante",
-          description: "Projéteis perfuram +1 inimigo",
+          description: "Aumenta a perfuração dos projéteis.",
+          generatesNextLevelDescription: (currentPlayerStats, currentLevel) => {
+            const currentPierce = currentPlayerStats.projectilePierce || 0;
+            const nextPierce = currentPierce + 1;
+            return `Projéteis perfuram inimigos. Perfurações atuais: ${currentPierce} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextPierce}</span>.`;
+          },
           rarity: "common",
           icon: "common.png",
           apply: (e) => e.stats.projectilePierce++,
@@ -1722,13 +1738,13 @@
           apply: (e) => (e.stats.cold = !0),
         },
         {
-          name: "Meditação de Batalha",
-          description:
-            "Ganha velocidade de ataque a cada segundo que fica parado",
-          rarity: "rare",
-          icon: "rare.png",
-          apply: (e) => (e.stats.focus = !0),
-        },
+        name: "Meditação de Batalha",
+        description:
+          "Ganha velocidade de ataque a cada segundo que fica parado. Acumulável para maior bônus e teto mais alto.",
+        rarity: "rare",
+        icon: "rare.png",
+        apply: (e) => (e.stats.focusLevel = (e.stats.focusLevel || 0) + 1),
+      },
         {
           name: "Vontade Inquebrável",
           description: "+1 ressurreição (mata todos os inimigos ao reviver)",
@@ -1827,13 +1843,13 @@
             barrierCooldown: 15e3,
             barrierTimer: 0,
             cold: !1,
-            focus: !1,
+            focusLevel: 0,
             revives: 0,
             tome: !1,
             hasWisp: !1,
             wound: !1,
-            laserBeam: false,   // Novo
-            interceptor: false, // Novo
+            laserBeam: false,
+            interceptor: false,
             chainJumps: 0, 
           };
         }
@@ -1896,49 +1912,59 @@
             this.onGround = false;
           }
 
-          // CÓDIGO DE MOVIMENTO HORIZONTAL REINSERIDO AQUI
           (this.x += this.vx),
           this.x < 0 && (this.x = 0),
           this.x + this.width > canvas.width &&
             (this.x = canvas.width - this.width),
-          // FIM DO CÓDIGO REINSERIDO
 
-          this.invulnerableTimer > 0 && (this.invulnerableTimer -= e); // Estava faltando
+          this.invulnerableTimer > 0 && (this.invulnerableTimer -= e);
           this.laserDamageTick > 0 && (this.laserDamageTick -= e);
           this.shootCooldown > 0 && (this.shootCooldown -= e);
 
-          if (this.stats.laserBeam) {
-            if ((mouse.down || autoFire) && this.laserDamageTick <= 0) {
-              this.laserDamageTick = this.stats.attackSpeed / 5; // Ticks de dano rápidos
-              const { x: startX, y: startY } = this.getWeaponTip();
-              const angle = Math.atan2(mouse.y - startY, mouse.x - startX);
-              
-              // Raycast simplificado para encontrar o primeiro inimigo
-              let laserTarget = null;
-              let minDistance = Infinity;
-              for(const enemy of enemies) {
-                // ... (a lógica completa do raycast é complexa, aqui está uma aproximação)
-                const distToPlayer = Math.hypot(enemy.x - this.x, enemy.y - this.y);
-                if (distToPlayer < minDistance) {
-                   const angleToEnemy = Math.atan2(enemy.y + enemy.height / 2 - startY, enemy.x + enemy.width / 2 - startX);
-                   if (Math.abs(angle - angleToEnemy) < 0.2) { // Se o inimigo está no "cone" do laser
-                       laserTarget = enemy;
-                       minDistance = distToPlayer;
-                   }
-                }
-              }
+          if (this.stats.laserBeam && (mouse.down || autoFire) && this.laserDamageTick <= 0) {
+            this.laserDamageTick = 500;
+            const { x: startX, y: startY } = this.getWeaponTip();
+            const angle = Math.atan2(mouse.y - startY, mouse.x - startX);
 
-              if (laserTarget) {
-                  laserTarget.takeDamage(this.stats.projectileDamage / 4, Math.random() < this.stats.critChance);
+            enemies.forEach(enemy => {
+              if (enemy.hp > 0 && isEnemyIntersectedByRay(enemy, startX, startY, angle)) {
+                enemy.takeDamage(this.stats.projectileDamage / 3, Math.random() < this.stats.critChance);
               }
+            });
+          }
+
+          if ((mouse.down || autoFire) && this.shootCooldown <= 0) {
+            this.shoot();
+            
+            let finalAttackSpeed = this.stats.attackSpeed;
+            if (this.stats.focusLevel > 0) {
+              const rampUpBaseDuration = 8000; 
+              const rampUpDurationReductionPerLevel = 1000;
+              const minRampUpDuration = 2500; 
+              
+              let currentRampUpDuration = rampUpBaseDuration - rampUpDurationReductionPerLevel * (this.stats.focusLevel - 1);
+              currentRampUpDuration = Math.max(minRampUpDuration, currentRampUpDuration);
+
+              const focusBonusDivisor = 1 + (this.stillTimer / currentRampUpDuration);
+              let focusModifiedAttackSpeed = this.stats.attackSpeed / focusBonusDivisor;
+              
+              const maxFocusLevelForCapCalc = 5;
+              const effectiveFocusLevelForCap = Math.min(this.stats.focusLevel, maxFocusLevelForCapCalc);
+
+              const baseCapPercentage = 0.50; 
+              const capPercentageReductionPerLevel = 0.07; 
+              const absoluteMinAttackSpeedMs = 40; 
+
+              let currentCapPercentage = baseCapPercentage - capPercentageReductionPerLevel * (effectiveFocusLevelForCap - 1);
+              currentCapPercentage = Math.max(0.1, currentCapPercentage); 
+
+              const minAttackSpeedFromPercentage = this.stats.attackSpeed * currentCapPercentage;
+              const minAttackSpeedCap = Math.max(absoluteMinAttackSpeedMs, minAttackSpeedFromPercentage);
+              
+              focusModifiedAttackSpeed = Math.max(minAttackSpeedCap, focusModifiedAttackSpeed);
+              finalAttackSpeed = focusModifiedAttackSpeed;
             }
-          } else {
-            (mouse.down || autoFire) &&
-              this.shootCooldown <= 0 &&
-              (this.shoot(),
-              (this.shootCooldown = this.stats.focus
-                ? this.stats.attackSpeed / (1 + this.stillTimer / 5e3)
-                : this.stats.attackSpeed));
+            this.shootCooldown = finalAttackSpeed;
           }
           this.updateSpecial(e);
         }
@@ -1952,9 +1978,9 @@
                 new PlayerProjectile(
                   this.x + this.width / 2,
                   this.y + this.height / 2,
-                  -Math.PI / 2, // Ângulo para cima
-                  40, // Dano do projétil explosivo
-                  true // É explosivo
+                  -Math.PI / 2,
+                  40,
+                  true
                 )
               );
             this.distanceTraveled = 0;
@@ -2076,10 +2102,15 @@
           }
           if (this.stats.laserBeam && (mouse.down || autoFire)) {
             const { x: startX, y: startY } = this.getWeaponTip();
+            const angle = Math.atan2(mouse.y - startY, mouse.x - startX);
+            const laserLength = Math.max(canvas.width, canvas.height) * 2;
+            const endX = startX + Math.cos(angle) * laserLength;
+            const endY = startY + Math.sin(angle) * laserLength;
+
             ctx.save();
             ctx.beginPath();
             ctx.moveTo(startX, startY);
-            ctx.lineTo(mouse.x, mouse.y);
+            ctx.lineTo(endX, endY);
             ctx.strokeStyle = "#ff4747";
             ctx.lineWidth = 3 + Math.random() * 2;
             ctx.shadowColor = "#ff0000";
@@ -2128,22 +2159,11 @@
                 saveGameData(),
                 (gameOverScreen.style.display = "flex");
 
-              let upgradesHTML = '';
-              if (this.upgrades.size > 0) {
-                upgradesHTML = '<h3>Upgrades Adquiridos:</h3><div style="display: flex; flex-wrap: wrap; gap: 5px;">';
-                for (const [name, count] of this.upgrades) {
-                  const upgradeData = allUpgrades.find(u => u.name === name);
-                  upgradesHTML += `<div class="inventory-item">${upgradeData.icon ? `<img src="img/${upgradeData.icon}" style="width: 16px; height: 16px; image-rendering: pixelated;">` : ''} <span>${name} (${count})</span></div>`;
-                }
-                upgradesHTML += '</div>';
-              }
-
               d.getElementById("gameOverStats").innerHTML = `
                 <strong>Pontuação Final:</strong> ${score}<br>
                 <strong>Onda Concluída:</strong> ${currentWave}<br>
                 <strong>Inimigos Derrotados:</strong> ${runEnemiesKilled}<br>
-                <strong>Tempo:</strong> ${formatTime(runTimer)}<br>
-                ${upgradesHTML}`;
+                <strong>Tempo:</strong> ${formatTime(runTimer)}<br>`;
               
               Leaderboard.show();
             }
@@ -2152,27 +2172,41 @@
           this.hp = Math.min(this.stats.maxHp, this.hp + e);
         }
         gainExp(e) {
-          const t = e * this.stats.expGainModifier;
-          (this.exp += t),
-            (score += e),
-            this.exp >= this.expToNextLevel && this.levelUp();
+          if (gameState !== 'playing') return;
+
+          const expGained = e * this.stats.expGainModifier;
+          this.exp += expGained;
+          score += Math.round(e);
+
+          while (this.exp >= this.expToNextLevel && gameState === 'playing') {
+            this.levelUp(); 
+          }
+
+          if (this.exp < 0) {
+              this.exp = 0;
+          }
         }
+
         levelUp() {
-          this.level++,
-            (this.exp -= this.expToNextLevel),
-            (this.expToNextLevel = Math.floor(1.5 * this.expToNextLevel)),
-            (this.hp = this.stats.maxHp),
-            (this.rerollsLeft = this.stats.rerollCharges),
-            soundManager.playLevelUpSound(),
-            triggerLevelUp();
+          if (gameState !== 'playing') return; 
+
+          this.level++;
+          const excessExp = this.exp - this.expToNextLevel;
+          this.exp = Math.max(0, excessExp);
+
+          this.expToNextLevel = Math.floor(this.expToNextLevel * 1.5 + this.level * 10);
+
+          this.hp = this.stats.maxHp;
+          this.rerollsLeft = this.stats.rerollCharges;
+          
+          soundManager.playLevelUpSound();
+          triggerLevelUp();
         }
-        
         gainRandomRareUpgrade() {
             const rareUpgrades = allUpgrades.filter(u => u.rarity === 'rare' && (!u.isUnique || !this.upgrades.has(u.name)));
             if (rareUpgrades.length > 0) {
                 const chosenUpgrade = rareUpgrades[Math.floor(Math.random() * rareUpgrades.length)];
                 
-                // Aplica a melhoria
                 chosenUpgrade.apply(this);
                 if (chosenUpgrade.isUnique) {
                     availableUpgrades = availableUpgrades.filter(u => u.name !== chosenUpgrade.name);
@@ -2180,14 +2214,19 @@
                 const currentCount = this.upgrades.get(chosenUpgrade.name) || 0;
                 this.upgrades.set(chosenUpgrade.name, currentCount + 1);
                 
-                // Mostra um anúncio visual da recompensa
-                waveAnnouncer.innerText = `RECOMPENSA: ${chosenUpgrade.name}`;
+                waveAnnouncer.innerText = `RECOMPENSA CHEFE: ${chosenUpgrade.name}`;
                 waveAnnouncer.style.opacity = 1;
                 setTimeout(() => {
                     waveAnnouncer.style.opacity = 0;
-                }, 3000); // Mostra por 3 segundos
+                }, 3000); 
 
                 updateInventoryUI();
+            } else {
+                waveAnnouncer.innerText = `RECOMPENSA CHEFE: Nenhuma melhoria rara disponível!`;
+                waveAnnouncer.style.opacity = 1;
+                setTimeout(() => {
+                    waveAnnouncer.style.opacity = 0;
+                }, 3000);
             }
         }
       }
@@ -2266,28 +2305,27 @@
       }
 
       function spawnWave(e) {
-        enemies.length = 0; // Limpa inimigos de ondas anteriores
+        enemies.length = 0;
 
-        if (e % 5 === 0 && e > 0) { // Onda de Boss
+        if (e % 5 === 0 && e > 0) {
             const waveDefForHP = createProceduralWave(e);
             const bossHP = calculateWaveHP(waveDefForHP);
-            enemies.push(new BossEnemy(bossHP, e)); // Passa a onda para o Boss
-        } else { // Onda normal
+            enemies.push(new BossEnemy(bossHP, e));
+        } else {
             let waveDef = WAVE_DEFS.find((t) => t.wave === e) || createProceduralWave(e);
             for (const enemyName in waveDef.enemies) {
                 for (let i = 0; i < waveDef.enemies[enemyName]; i++) {
                     if (ENEMY_TYPES[enemyName]) {
-                        // Passa a onda para o construtor do inimigo
                         enemies.push(new ENEMY_TYPES[enemyName](e));
                     }
                 }
             }
 
-            if (e % 3 === 0 && e > 0) { // Adiciona um Elite
+            if (e % 3 === 0 && e > 0) {
                 if (enemies.length > 0) {
-                    enemies.shift(); // Remove um inimigo para dar lugar ao elite
+                    enemies.shift();
                 }
-                enemies.push(new EliteEnemy(e)); // Passa a onda para o Elite
+                enemies.push(new EliteEnemy(e));
             }
         }
       }
@@ -2304,10 +2342,28 @@
             : t >= 2 && Math.random() < 0.5
             ? (o.SentinelaEspectral++, (t -= 2))
             : (o.LacaioDoVazio++, (t -= 1));
-        return { wave: e, enemies: o };
+
+        if (e > 3 && Math.random() < 0.15) {
+            if (o.LacaioDoVazio > 0 && Math.random() < 0.5) {
+                o.LacaioDoVazio--;
+                o.ErraticLurker = (o.ErraticLurker || 0) + 1;
+            } else if (o.LacaioDoVazio > 0) {
+                o.LacaioDoVazio--;
+                o.DashingPhantom = (o.DashingPhantom || 0) + 1;
+            }
+        }if (e > 4 && Math.random() < 0.1) {
+          if (o.LacaioDoVazio > 0) {
+              o.LacaioDoVazio--;
+              o.GroundSkulker = (o.GroundSkulker || 0) + 1;
+          } else if (t > 0.5){
+              o.GroundSkulker = (o.GroundSkulker || 0) + 1;
+              t -= 0.5;
+          }
       }
-      class Enemy {
-        constructor(wave = 1) { // Aceita a onda, com padrão 1
+      return { wave: e, enemies: o };
+    }
+ class Enemy {
+        constructor(wave = 1) {
           (this.x = Math.random() * (canvas.width - 50) + 25),
             (this.y = -50),
             (this.chaseHeight = canvas.height * (0.15 + 0.2 * Math.random())),
@@ -2317,49 +2373,157 @@
             (this.bleedTimer = 0),
             (this.bleedDamage = 0),
             (this.hitFlashTimer = 0);
-          this.wave = wave; // Armazena a onda
-          this.scaleFactor = 1 + (this.wave - 1) * 0.1;
-        }
-        update(e) {
+            this.wave = wave;
+            this.scaleFactor = 1 + (this.wave - 1) * 0.1;
+            this.currentMoveAngle = Math.random() * Math.PI * 2;
+            this.turnCooldown = 0;
+            this.timeToTurn = 500 + Math.random() * 500;
+          }
+          update(e) {
+            if (!(this instanceof GroundSkulker)) {
+              const groundY = getGroundHeight(this.x + this.width / 2);
+              const avoidGroundBuffer = this.height * 0.5; 
+              if (this.y + this.height > groundY - avoidGroundBuffer) {
+                  this.y = groundY - avoidGroundBuffer - this.height;
+                  if (Math.sin(this.currentMoveAngle) > 0) { 
+                    this.currentMoveAngle *= -1; 
+                    this.currentMoveAngle = (this.currentMoveAngle % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+                  }
+              }
+          }
           if ("descending" === this.state)
             (this.y += this.speed),
               this.y > this.chaseHeight && (this.state = "chasing");
           else if ("chasing" === this.state) {
-            let h = 0;
-            enemies.forEach((u) => {
-              if (u === this) return;
-              const d = Math.hypot(this.x - u.x, this.y - u.y),
-                c = this.width + 10;
-              d < c && d > 0 && (h += (this.x - u.x) / d);
+            let separationX = 0;
+            let separationY = 0;
+            const SEPARATION_BUFFER = 5;
+
+            enemies.forEach((otherEnemy) => {
+              if (otherEnemy === this || otherEnemy.hp <= 0) return;
+
+              const dx = this.x - otherEnemy.x;
+              const dy = this.y - otherEnemy.y;
+              const distance = Math.hypot(dx, dy);
+              
+              const combinedRadius = (this.width + otherEnemy.width) / 2 + SEPARATION_BUFFER;
+
+              if (distance < combinedRadius && distance > 0) {
+                const overlap = combinedRadius - distance;
+                const forceMagnitude = overlap / combinedRadius;
+                separationX += (dx / distance) * forceMagnitude;
+                separationY += (dy / distance) * forceMagnitude;
+              }
             });
-            const t =
-              this.chaseHeight + 20 * Math.sin(gameTime / 1e3 + this.x / 50);
-            let o = player.x + player.width / 2;
-            "sniper" === this.aiType &&
-              Math.abs(o - this.x) < 400 &&
-              (o = this.x - 100 * Math.sign(o - this.x));
-            const i = Math.atan2(t - this.y, o - this.x);
-            (this.x +=
-              Math.cos(i) * this.speed * this.slowFactor +
-              h * 0.5 * this.speed),
-              (this.y += 0.5 * Math.sin(i) * this.speed * this.slowFactor),
-              (this.shootTimer += e),
-              this.shootTimer >= this.shootCooldown &&
-                (this.shoot(), (this.shootTimer = 0));
+            
+            const sepMagnitude = Math.hypot(separationX, separationY);
+            if (sepMagnitude > 1) {
+                separationX /= sepMagnitude;
+                separationY /= sepMagnitude;
+            }
+
+        const t =
+                  this.chaseHeight + 20 * Math.sin(gameTime / 1e3 + this.x / 50);
+        let o = player.x + player.width / 2;
+        "sniper" === this.aiType &&
+          Math.abs(o - this.x) < 400 &&
+          (o = this.x - 100 * Math.sign(o - this.x));
+
+
+        this.turnCooldown -= e;
+        if (this.turnCooldown <= 0) {
+          const targetAngle = Math.atan2(t - this.y, o - this.x);
+          let angleDiff = targetAngle - this.currentMoveAngle;
+          while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+          while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+          const turnSpeed = 0.05; 
+          if (Math.abs(angleDiff) > turnSpeed) {
+            this.currentMoveAngle += Math.sign(angleDiff) * turnSpeed;
+          } else {
+            this.currentMoveAngle = targetAngle;
           }
-          if (this.x < 0) this.x = 0;
-          if (this.x + this.width > canvas.width)
+          this.turnCooldown = this.timeToTurn * 0.2 + Math.random() * (this.timeToTurn * 0.3);
+        }
+        
+        if (this.turnCooldown > this.timeToTurn * 0.1) {
+             this.currentMoveAngle += (Math.random() - 0.5) * 0.1; 
+        }
+
+        let desiredMoveX = Math.cos(this.currentMoveAngle) * this.speed * this.slowFactor;
+        let desiredMoveY = Math.sin(this.currentMoveAngle) * this.speed * this.slowFactor * 0.7;
+
+        this.x += desiredMoveX + separationX * this.speed * 0.8; 
+        this.y += desiredMoveY + separationY * this.speed * 0.8; 
+
+            (this.shootTimer += e),
+            this.shootTimer >= this.shootCooldown &&
+              (this.shoot(), (this.shootTimer = 0));
+        }
+
+        const MIN_Y_DEFAULT = 50; 
+        const MIN_Y_ERRATIC = 20; 
+
+        let actualMinY = (this instanceof ErraticLurker || this instanceof GroundSkulker) ? MIN_Y_ERRATIC : MIN_Y_DEFAULT;
+        
+        let bounced = false;
+        if (this.x < 0) {
+            this.x = 0;
+            this.currentMoveAngle = Math.PI - this.currentMoveAngle; 
+            bounced = true;
+        } else if (this.x + this.width > canvas.width) {
             this.x = canvas.width - this.width;
-          this.bleedDamage > 0 &&
-            ((this.bleedTimer += e),
-            this.bleedTimer >= 1e3 &&
-              (this.takeDamage(this.bleedDamage, !1, !0),
-              (this.bleedTimer = 0))),
-            checkCollision(this, player) &&
-              (player.takeDamage(this.damage),
-              player.stats.contactDamage > 0 &&
-                this.takeDamage(player.stats.contactDamage));
-          if (this.hitFlashTimer > 0) this.hitFlashTimer -= e;
+            this.currentMoveAngle = Math.PI - this.currentMoveAngle;
+            bounced = true;
+        }
+
+        if (this.y < actualMinY) {
+            this.y = actualMinY;
+            if (Math.sin(this.currentMoveAngle) < 0) {
+                this.currentMoveAngle *= -1; 
+            }
+            bounced = true;
+        }
+        
+        if(bounced) {
+            this.currentMoveAngle = (this.currentMoveAngle % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+            this.turnCooldown = this.timeToTurn * 0.5;
+        }
+        
+        if (!(this instanceof GroundSkulker)) {
+            const groundY = getGroundHeight(this.x + this.width / 2);
+            const avoidGroundBuffer = this.height * 0.5;
+            if (this.y + this.height > groundY - avoidGroundBuffer) {
+                this.y = groundY - avoidGroundBuffer - this.height;
+                if (Math.sin(this.currentMoveAngle) > 0) {
+                  this.currentMoveAngle *= -1; 
+                  this.currentMoveAngle = (this.currentMoveAngle % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+                }
+            }
+        }
+
+        if (this.bleedDamage > 0 && this.hp > 0) {
+          this.bleedTimer += e;
+          if (this.bleedTimer >= 1e3) {
+            const damageFromBleed = this.bleedDamage;
+            this.takeDamage(damageFromBleed, false, true);
+            if (damageFromBleed > 0) {
+                this.hitFlashTimer = 100;
+            }
+            this.bleedTimer = 0;
+            if (this.hp <= 0) {
+              this.die();
+            }
+          }
+        }
+
+        if (this.hp > 0 && checkCollision(this, player)) {
+            player.takeDamage(this.damage);
+            if (player.stats.contactDamage > 0) {
+                this.takeDamage(player.stats.contactDamage, false, false);
+            }
+        }
+        if (this.hitFlashTimer > 0) this.hitFlashTimer -= e;
         }
         drawHealthBar() {
           if (!gameData.showEnemyHealthBars) return;
@@ -2389,10 +2553,13 @@
           }
         }
         takeDamage(e, t = !1, o = !1) {
+          if (this.hp <= 0) return;
+
           if (!o) {
             soundManager.playEnemyHitSound();
-            this.hitFlashTimer = 100; // Duração do flash em ms
+            this.hitFlashTimer = 100;
           }
+
           gameData.showDamageNumbers &&
             dNums.push(
               new DamageNumber(
@@ -2401,12 +2568,21 @@
                 Math.round(e),
                 t
               )
-            ),
-            (this.hp -= e),
-            this.hp <= 0 && !o && this.die();
+            );
+            
+          this.hp -= e;
+
+          if (this.hp <= 0 && !o) {
+            this.die();
+          }
         }
         die() {
+          if (this.hp > 0 && enemies.includes(this)) {
+          }
+          this.hp = 0;
+          this.hp = 0;
           runEnemiesKilled++;
+          createExplosion(this.x + this.width / 2, this.y + this.height / 2, "rgba(200, 200, 255, 0.7)", 20 + this.width / 4);
           soundManager.playEnemyDieSound(),
             player.gainExp(this.expValue),
             Math.random() < 0.8 &&
@@ -2420,17 +2596,19 @@
             player.stats.fragmentation > 0 &&
                 Array.from({ length: player.stats.fragmentation }).forEach(() => {
                 let t = null;
-                enemies.length > 0 &&
-                  (t = enemies[Math.floor(Math.random() * enemies.length)]);
+                const otherEnemies = enemies.filter(enemy => enemy !== this && enemy.hp > 0);
+                if (otherEnemies.length > 0) {
+                  t = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
+                }
                 const o = t
-                  ? Math.atan2(t.y - this.y, t.x - this.x)
+                  ? Math.atan2(t.y + t.height / 2 - (this.y + this.height / 2), t.x + t.width / 2 - (this.x + this.width / 2))
                   : 2 * Math.random() * Math.PI;
-                eProjs.push(
-                    new EnemyProjectile(
+                pProjs.push(
+                    new PlayerProjectile(
                     this.x + this.width / 2,
                     this.y + this.height / 2,
                     o,
-                    player.stats.projectileDamage / 3 // Dano baseado no dano do jogador
+                    player.stats.projectileDamage / 3
                     )
                 );
               }),
@@ -2454,14 +2632,14 @@
       }
       class LacaioDoVazio extends Enemy {
         constructor(wave) {
-          super(wave); // Passa a onda para a classe pai
+          super(wave);
             (this.width = 42),
             (this.height = 42),
             (this.speed = 0.7 + 0.3 * Math.random() * 0.6),
-            (this.maxHp = Math.round(26 * this.scaleFactor)), // Aplica o scaling
+            (this.maxHp = Math.round(26 * this.scaleFactor)),
             (this.hp = this.maxHp),
-            (this.damage = Math.round(6 * this.scaleFactor)), // Aplica o scaling
-            (this.expValue = Math.round(40 * this.scaleFactor)), // Aplica o scaling
+            (this.damage = Math.round(6 * this.scaleFactor)),
+            (this.expValue = Math.round(40 * this.scaleFactor)),
             (this.shootCooldown = 2400),
             (this.color = "#ff00ff"),
             (this.aiType = "standard");
@@ -2583,14 +2761,16 @@
         }
       }
 
+      
+
       class EliteEnemy extends GuardiaoAnomalo {
         constructor(wave) {
-          super(wave); // Herda o scaling do Guardião
+          super(wave);
           this.width *= 1.5;
           this.height *= 1.5;
-          this.maxHp *= 2; // Dobra o HP já escalado
+          this.maxHp *= 2;
           this.hp = this.maxHp;
-          this.damage *= 2; // Dobra o dano já escalado
+          this.damage *= 2;
           this.expValue *= 3;
           this.color = "#ffd700";
         }
@@ -2599,8 +2779,8 @@
         }
         die() {
           super.die();
-          player.levelUp(); // Garante 1 nível
-          player.rerollsLeft++; // Garante 1 reroll
+          player.levelUp();
+          player.rerollsLeft++;
           createExplosion(this.x + this.width / 2, this.y + this.height / 2, this.color, 50);
         }
       }
@@ -2611,9 +2791,9 @@
           this.width = 150;
           this.height = 150;
           this.speed = 0.5 * 0.6;
-          this.maxHp = hp; // O HP do Boss já é calculado com base na onda
+          this.maxHp = hp;
           this.hp = this.maxHp;
-          this.damage = Math.round(25 * this.scaleFactor); // Escala apenas o dano
+          this.damage = Math.round(25 * this.scaleFactor);
           this.expValue = Math.round(1000 * this.scaleFactor);
           this.color = "#e74c3c";
           this.aiType = "boss";
@@ -2635,7 +2815,6 @@
 
         die() {
             super.die();
-            // Adiciona a recompensa de skill rara
             player.gainRandomRareUpgrade();
         }
 
@@ -2654,9 +2833,9 @@
             }
           } else if (attackType === "dash") {
             const angleToPlayer = Math.atan2(player.y - this.y, player.x - this.x);
-            this.vx = Math.cos(angleToPlayer) * this.speed * 5; // Dash rápido
+            this.vx = Math.cos(angleToPlayer) * this.speed * 5;
             this.vy = Math.sin(angleToPlayer) * this.speed * 5;
-            setTimeout(() => { this.vx = 0; this.vy = 0; }, 500); // Para após 0.5s
+            setTimeout(() => { this.vx = 0; this.vy = 0; }, 500);
           }
         }
         
@@ -2678,7 +2857,7 @@
           }
         }
         
-        shoot() { /* O ataque é controlado pelo executeAttack */ }
+        shoot() { }
       }
       
       (ENEMY_TYPES.LacaioDoVazio = LacaioDoVazio),
@@ -2687,6 +2866,322 @@
         (ENEMY_TYPES.EliteEnemy = EliteEnemy),
         (ENEMY_TYPES.BossEnemy = BossEnemy);
       
+      class ErraticLurker extends LacaioDoVazio {
+        constructor(wave) {
+          super(wave);
+          this.auraColor = "rgba(150, 50, 200, 0.4)";
+          this.erraticMoveTimer = 0;
+          this.erraticInterval = 300 + Math.random() * 400;
+          this.currentMoveAngle = Math.random() * Math.PI * 2;
+          this.speed *= 1.2;
+          this.turnCooldown = 0;
+          this.timeToTurn = 100;
+        }
+
+        update(e) {
+          if ("descending" === this.state) {
+            this.y += this.speed * 0.5;
+            if (this.y > this.chaseHeight) {
+              this.state = "chasing";
+              this.erraticMoveTimer = this.erraticInterval;
+            }
+            return;
+          } else if ("chasing" === this.state) {
+            this.erraticMoveTimer -= e;
+            if (this.erraticMoveTimer <= 0) {
+              const angleToPlayer = Math.atan2(player.y - this.y, player.x - this.x);
+              this.currentMoveAngle = angleToPlayer + (Math.random() - 0.5) * Math.PI;
+              this.erraticMoveTimer = this.erraticInterval;
+            }
+            
+            let separationForceX = 0;
+            enemies.forEach((other) => {
+              if (other === this || other.hp <=0) return;
+              const dist = Math.hypot(this.x - other.x, this.y - other.y);
+              const minDist = (this.width / 2 + other.width / 2) + 10;
+              if (dist < minDist && dist > 0) {
+                separationForceX += (this.x - other.x) / dist;
+              }
+            });
+
+           this.x += Math.cos(this.currentMoveAngle) * this.speed * this.slowFactor + separationForceX * 0.5 * this.speed;
+          this.y += Math.sin(this.currentMoveAngle) * this.speed * this.slowFactor * 0.7;
+
+          const MIN_Y_ERRATIC = 20;
+          const MAX_Y_ERRATIC = canvas.height - 50 - this.height;
+
+          if (this.x < 0) { 
+              this.x = 0; 
+              this.currentMoveAngle = Math.PI - this.currentMoveAngle;
+          } else if (this.x + this.width > canvas.width) { 
+              this.x = canvas.width - this.width; 
+              this.currentMoveAngle = Math.PI - this.currentMoveAngle;
+          }
+
+          if (this.y < MIN_Y_ERRATIC) { 
+              this.y = MIN_Y_ERRATIC; 
+              this.currentMoveAngle *= -1;
+          } else if (this.y > MAX_Y_ERRATIC) { 
+              this.y = MAX_Y_ERRATIC; 
+              this.currentMoveAngle *= -1;
+          }
+          this.currentMoveAngle = (this.currentMoveAngle % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+
+
+            this.shootTimer += e;
+            if (this.shootTimer >= this.shootCooldown) {
+              super.shoot();
+              this.shootTimer = 0;
+            }
+          }
+          if (this.hitFlashTimer > 0) this.hitFlashTimer -= e;
+        }
+
+        draw() {
+          super.draw();
+          ctx.save();
+          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = this.auraColor;
+          ctx.beginPath();
+          ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width * 0.7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      class DashingPhantom extends LacaioDoVazio {
+        constructor(wave) {
+          super(wave);
+          this.auraColor = "rgba(230, 230, 50, 0.4)";
+          this.dashCooldown = 0;
+          this.dashInterval = 2000 + Math.random() * 1500;
+          this.isDashing = false;
+          this.dashDuration = 200;
+          this.dashTimer = 0;
+          this.dashSpeed = this.speed * 3;
+          this.turnCooldown = 0; 
+          this.timeToTurn = 200; 
+          this.currentMoveAngle = Math.atan2(player.y - this.y, player.x - this.x);
+        }
+
+        update(e) {
+          if ("descending" === this.state) {
+            this.y += this.speed * 0.5;
+            if (this.y > this.chaseHeight) {
+              this.state = "chasing";
+              this.dashCooldown = this.dashInterval / 2;
+            }
+            return;
+          } else if ("chasing" === this.state) {
+            this.dashCooldown -= e;
+
+            let separationForceX = 0;
+            let separationForceY = 0;
+            enemies.forEach((other) => {
+                if (other === this || other.hp <= 0) return;
+                const dist = Math.hypot(this.x - other.x, this.y - other.y);
+                const minDist = (this.width / 2 + other.width / 2) + 10;
+                if (dist < minDist && dist > 0) {
+                    const forceFactor = (minDist - dist) / minDist;
+                    separationForceX += ((this.x - other.x) / dist) * forceFactor;
+                    separationForceY += ((this.y - other.y) / dist) * forceFactor;
+                }
+            });
+            const maxSeparation = 1.0;
+            separationForceX = Math.max(-maxSeparation, Math.min(maxSeparation, separationForceX));
+            separationForceY = Math.max(-maxSeparation, Math.min(maxSeparation, separationForceY));
+
+
+            if (this.isDashing) {
+              this.x += Math.cos(this.currentMoveAngle) * this.dashSpeed * this.slowFactor;
+              this.dashTimer -= e;
+              if (this.dashTimer <= 0) {
+                this.isDashing = false;
+                this.dashCooldown = this.dashInterval;
+              }
+            } else {
+              if (this.dashCooldown <= 0 && Math.abs(this.y - player.y) < this.height * 2) {
+                this.isDashing = true;
+                this.dashTimer = this.dashDuration;
+                this.currentMoveAngle = (player.x < this.x) ? Math.PI : 0;
+              } else {
+                const targetY = player.y + player.height / 2 - this.height / 2;
+                const targetX = player.x + (player.x < this.x ? 200 : -200);
+
+                const angleToTarget = Math.atan2(targetY - this.y, targetX - this.x);
+                this.currentMoveAngle = angleToTarget;
+
+                this.x += Math.cos(this.currentMoveAngle) * this.speed * this.slowFactor + separationForceX * this.speed * 0.5;
+                this.y += Math.sin(this.currentMoveAngle) * this.speed * this.slowFactor * 0.8 + separationForceY * this.speed * 0.4;
+              }
+            }
+
+            const MIN_Y_DASHER = 50;
+            const MAX_Y_DASHER = canvas.height - this.height - 50;
+
+            if (this.x < 0) {
+                this.x = 0;
+                if (this.isDashing) this.isDashing = false;
+            } else if (this.x + this.width > canvas.width) {
+                this.x = canvas.width - this.width;
+                if (this.isDashing) this.isDashing = false;
+            }
+
+            if (this.y < MIN_Y_DASHER) {
+                this.y = MIN_Y_DASHER;
+            } else if (this.y > MAX_Y_DASHER) {
+                this.y = MAX_Y_DASHER;
+            }
+
+
+            this.shootTimer += e;
+            if (this.shootTimer >= this.shootCooldown * 1.5) {
+              super.shoot();
+              this.shootTimer = 0;
+            }
+          }
+          if (this.hitFlashTimer > 0) this.hitFlashTimer -= e;
+        }
+
+        draw() {
+          super.draw();
+          ctx.save();
+          ctx.globalAlpha = this.isDashing ? 0.9 : 0.7;
+          ctx.fillStyle = this.auraColor;
+          ctx.beginPath();
+          const auraWidth = this.isDashing ? this.width * 1.2 : this.width * 0.8;
+          const auraHeight = this.isDashing ? this.height * 0.6 : this.height * 0.8;
+          ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, auraWidth, auraHeight, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      
+      (ENEMY_TYPES.LacaioDoVazio = LacaioDoVazio),
+        (ENEMY_TYPES.GuardiaoAnomalo = GuardiaoAnomalo),
+        (ENEMY_TYPES.SentinelaEspectral = SentinelaEspectral),
+        (ENEMY_TYPES.EliteEnemy = EliteEnemy),
+        (ENEMY_TYPES.BossEnemy = BossEnemy);
+      ENEMY_TYPES.ErraticLurker = ErraticLurker;
+      ENEMY_TYPES.DashingPhantom = DashingPhantom;
+      
+      class GroundSkulker extends LacaioDoVazio {
+        constructor(wave) {
+          super(wave);
+          this.auraColor = "rgba(128, 128, 128, 0.5)";
+          this.burrowDepth = 150 + Math.random() * 100;
+          this.isBurrowed = false;
+          this.riseSpeed = this.speed * 2;
+          this.burrowCooldown = 0;
+          this.burrowInterval = 3000 + Math.random() * 2000;
+          this.attackHeightOffset = - (this.height * 1.5);
+          this.speed *= 0.8;
+          this.shootCooldown *= 1.5;
+          this.state = "seeking_burrow_spot";
+          this.targetBurrowX = player.x;
+        }
+
+        update(e) {
+          this.burrowCooldown -= e;
+
+          let separationX = 0;
+          enemies.forEach((other) => {
+              if (other === this || other.hp <= 0) return;
+              const dist = Math.hypot(this.x - other.x, this.y - other.y);
+              const minDist = (this.width / 2 + other.width / 2) + 15;
+              if (dist < minDist && dist > 0) {
+                  separationX += ((this.x - other.x) / dist) * ((minDist - dist) / minDist);
+              }
+          });
+          if (Math.abs(separationX) > 1) separationX = Math.sign(separationX);
+          this.x += separationX * this.speed * 0.5 * this.slowFactor;
+
+
+          if (this.state === "seeking_burrow_spot") {
+            this.targetBurrowX = player.x + (Math.random() - 0.5) * 100;
+            const angleToTargetX = Math.atan2(0, this.targetBurrowX - this.x);
+            this.x += Math.cos(angleToTargetX) * this.speed * this.slowFactor;
+            this.y += this.speed * 0.5 * this.slowFactor;
+
+            if (this.y + this.height > canvas.height - 30) {
+                this.y = canvas.height - 30 - this.height;
+            }
+
+
+            if (Math.abs(this.x - this.targetBurrowX) < this.width && this.burrowCooldown <= 0) {
+              this.state = "burrowing";
+              this.isBurrowed = true;
+            }
+          } else if (this.state === "burrowing") {
+            this.y += this.riseSpeed * 1.5 * this.slowFactor;
+            if (this.y > canvas.height + this.height) {
+              this.state = "waiting_below";
+              this.x = player.x + (Math.random() - 0.5) * (canvas.width / 3);
+              this.x = Math.max(this.width, Math.min(this.x, canvas.width - this.width * 2));
+              this.burrowCooldown = this.burrowInterval * 0.5;
+            }
+          } else if (this.state === "waiting_below") {
+            if (this.burrowCooldown <= 0) {
+              this.state = "rising_to_attack";
+              this.y = canvas.height + this.height;
+              this.x = player.x + (Math.random() - 0.5) * 50 - this.width/2;
+              this.x = Math.max(0, Math.min(this.x, canvas.width - this.width));
+            }
+          } else if (this.state === "rising_to_attack") {
+            this.y -= this.riseSpeed * this.slowFactor;
+            const targetAttackY = player.y + this.attackHeightOffset;
+            if (this.y <= targetAttackY) {
+              this.y = targetAttackY;
+              this.state = "attacking_from_below";
+              this.shootTimer = 0;
+            }
+          } else if (this.state === "attacking_from_below") {
+            const targetX = player.x + player.width / 2 - this.width / 2;
+            this.x += Math.sign(targetX - this.x) * this.speed * 0.3 * this.slowFactor;
+
+            this.shootTimer += e;
+            if (this.shootTimer >= this.shootCooldown) {
+              eProjs.push(new EnemyProjectile(this.x + this.width / 2, this.y, -Math.PI / 2, this.damage));
+              this.shootTimer = 0;
+              this.state = "retreating"; 
+              this.burrowCooldown = this.burrowInterval;
+            }
+          } else if (this.state === "retreating") {
+            this.y += this.speed * 1.2 * this.slowFactor;
+            if (this.y > canvas.height + this.height) {
+              this.state = "seeking_burrow_spot";
+              this.isBurrowed = false;
+            }
+          }
+          
+          if (this.hitFlashTimer > 0) this.hitFlashTimer -= e;
+          if (!this.isBurrowed && this.y + this.height < canvas.height) { 
+            if (checkCollision(this, player)) {
+                player.takeDamage(this.damage);
+            }
+          }
+        }
+
+        draw() {
+          if (!this.isBurrowed || this.state === "rising_to_attack" || this.state === "attacking_from_below") {
+            super.draw();
+            ctx.save();
+            ctx.globalAlpha = 0.6;
+            ctx.fillStyle = this.auraColor;
+            ctx.beginPath();
+            ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.width * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } else {
+          }
+        }
+        die() {
+            this.isBurrowed = false; 
+            super.die();
+        }
+      }
+      ENEMY_TYPES.GroundSkulker = GroundSkulker;
+
       class Projectile {
         constructor(e, t, o, i, s = 8) {
           (this.x = e),
@@ -2728,7 +3223,7 @@
                   totalHP += tempEnemy.maxHp * count;
               }
           }
-          return totalHP > 0 ? totalHP : 500; // Garante que tenha HP mesmo se o cálculo falhar
+          return totalHP > 0 ? totalHP : 500;
       }
       class PlayerProjectile extends Projectile {
         constructor(e, t, o, i = null, s = !1) {
@@ -2736,7 +3231,8 @@
             (this.radius = player.stats.projectileSize),
             (this.pierceLeft = player.stats.projectilePierce),
             (this.explosive = s),
-            (this.trail = []); 
+            (this.trail = []);
+          this.hitEnemies = new Set();
           let n = null !== i ? i : player.stats.projectileDamage;
           player.stats.rage &&
             player.hp < player.stats.maxHp / 2 &&
@@ -2744,7 +3240,7 @@
             (this.isCrit = Math.random() < player.stats.critChance),
             this.isCrit && (n *= player.stats.critDamage),
             (this.damage = n);
-           this.jumpsLeft = player.stats.chainJumps;
+          this.jumpsLeft = player.stats.chainJumps;
         }
         update() {
           super.update();
@@ -2759,7 +3255,7 @@
           ctx.save();
           for (let i = 0; i < this.trail.length; i++) {
               const pos = this.trail[i];
-              const opacity = (i / this.trail.length) * 0.8; // Opacidade aumentada
+              const opacity = (i / this.trail.length) * 0.8;
               const radius = this.radius * (i / this.trail.length);
               ctx.beginPath();
               ctx.arc(pos.x, pos.y, radius, 0, 2 * Math.PI);
@@ -2774,12 +3270,10 @@
             ctx.strokeRect(this.x - this.radius, this.y - this.radius, 2 * this.radius, 2 * this.radius);
           }
 
-          // Efeito de brilho (glow)
           ctx.save();
           ctx.shadowColor = this.isCrit ? "#f1c40f" : "#00ffff";
           ctx.shadowBlur = 15;
 
-          // Núcleo do projétil
           ctx.fillStyle = this.isCrit ? "#f1c40f" : "#00ffff";
           ctx.beginPath();
           ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
@@ -2796,9 +3290,11 @@
           }
         }
         onHit(e) {
-          if (!this.active) return;
+          if (!this.active || this.hitEnemies.has(e)) return;
 
           e.takeDamage(this.damage, this.isCrit);
+          this.hitEnemies.add(e);
+
           if (player.stats.lifeSteal > 0) player.heal(this.damage * player.stats.lifeSteal);
           if (player.stats.cold) e.slowFactor = Math.max(0.2, e.slowFactor * 0.99);
           if (player.stats.wound) e.bleedDamage += 0.1 * this.damage;
@@ -2808,7 +3304,7 @@
             let closestEnemy = null;
             let minDistance = Infinity;
             for (const otherEnemy of enemies) {
-              if (otherEnemy !== e && otherEnemy.hp > 0) {
+              if (otherEnemy !== e && otherEnemy.hp > 0 && !this.hitEnemies.has(otherEnemy)) {
                 const distance = Math.hypot(this.x - otherEnemy.x, this.y - otherEnemy.y);
                 if (distance < minDistance) {
                   minDistance = distance;
@@ -2821,18 +3317,19 @@
               this.angle = newAngle;
               this.vx = Math.cos(newAngle) * this.speed;
               this.vy = Math.sin(newAngle) * this.speed;
-              this.damage *= 0.8; // Dano reduzido a cada salto
-              return; // Projétil continua ativo
+              this.damage *= 0.8;
+              return;
             }
           }
           
           this.pierceLeft--;
-          if (this.pierceLeft <= 0) this.active = !1;
+          if (this.pierceLeft < 1) {
+            this.active = false;
+          }
         }
       }
       class EnemyProjectile extends Projectile {
         constructor(e, t, o, i, s = 5, n = 4 * 0.6) {
-          // Agora o parâmetro `i` (dano) é usado corretamente
           super(e, t, o, i, n), (this.radius = s);
         }
         draw() {
@@ -3097,10 +3594,8 @@
             const i = player.stats.projectileDamage;
             const groundY = getGroundHeight(o);
             
-            // Cria um objeto de raio em vez de desenhar diretamente
             lightningBolts.push(new LightningBolt(o, groundY));
             
-            // A cor da explosão agora combina com o raio
             createExplosion(o, groundY, "#00ffff", 30);
 
             enemies.forEach((e) => {
@@ -3117,6 +3612,38 @@
           e.y + e.height > t.y
         );
       }
+
+      function isEnemyIntersectedByRay(enemy, rayStartX, rayStartY, rayAngle) {
+        const dirX = Math.cos(rayAngle);
+        const dirY = Math.sin(rayAngle);
+
+        if (Math.abs(dirX) < 0.0001) {
+            if (rayStartX < enemy.x || rayStartX > enemy.x + enemy.width) return false;
+            if (dirY > 0) return rayStartY < enemy.y + enemy.height;
+            return rayStartY > enemy.y;
+        }
+        if (Math.abs(dirY) < 0.0001) {
+            if (rayStartY < enemy.y || rayStartY > enemy.y + enemy.height) return false;
+            if (dirX > 0) return rayStartX < enemy.x + enemy.width;
+            return rayStartX > enemy.x;
+        }
+
+        const invDirX = 1 / dirX;
+        const invDirY = 1 / dirY;
+
+        let t1 = (enemy.x - rayStartX) * invDirX;
+        let t2 = (enemy.x + enemy.width - rayStartX) * invDirX;
+        let t3 = (enemy.y - rayStartY) * invDirY;
+        let t4 = (enemy.y + enemy.height - rayStartY) * invDirY;
+
+        let tmin = Math.max(Math.min(t1, t2), Math.min(t3, t4));
+        let tmax = Math.min(Math.max(t1, t2), Math.max(t3, t4));
+
+        if (tmax < 0) return false;
+        if (tmin > tmax) return false;
+        
+        return true;
+      }
       function getRarityPool() {
         const e = Math.random(),
           t = 0.1 + 0.5 * player.stats.luck,
@@ -3130,49 +3657,65 @@
           (gameState = "levelUp"),
           (levelUpScreen.style.display = "flex"),
           (d.getElementById("autofire-indicator").style.display = "none"),
-          (d.getElementById("right-ui-container").style.opacity = "0"), // Esconde a UI do inventário
+          (d.getElementById("right-ui-container").style.opacity = "0"),
           (upgradeCardsContainer.innerHTML = "");
-        let e = [];
-        const t = player.stats.upgradeChoices,
-          o = availableUpgrades.filter(
-            (e) =>
-              !("Fogo-Fátuo" === e.name && player.stats.hasWisp) &&
-              !("Imortal" === e.name && player.stats.revives > 0)
-          );
-        for (let i = 0; i < t; i++) {
-          let s = getRarityPool(),
-            n = o.filter(
-              (t) => t.rarity === s && !e.find((e) => e.name === t.name)
+          let e = [];
+          const t = player.stats.upgradeChoices,
+            o = availableUpgrades.filter(
+              (item) =>
+                !(item.name === "Gêmeo Espectral" && player.stats.hasWisp) &&
+                !(item.name === "Vontade Inquebrável" && player.stats.revives > 0)
             );
-          0 === n.length &&
-            (n = o.filter((t) => !e.find((e) => e.name === t.name))),
-            n.length > 0 && e.push(n[Math.floor(Math.random() * n.length)]);
-        }
-        e.forEach((e) => {
-          if (!e) return;
-          const t = d.createElement("div"),
-            o = { common: "comum", uncommon: "incomum", rare: "raro" },
-            i =
-              e.icon && spriteImages[e.icon]
-                ? `<div class="card-icon"><img src="${
-                    spriteImages[e.icon].src
-                  }" alt="${e.name}"></div>`
+          for (let i = 0; i < t; i++) {
+            let s = getRarityPool(),
+              n = o.filter(
+                (upgradeDef) => upgradeDef.rarity === s && !e.find((existingUpgrade) => existingUpgrade.name === upgradeDef.name)
+              );
+            if (0 === n.length) {
+              n = o.filter((upgradeDef) => !e.find((existingUpgrade) => existingUpgrade.name === upgradeDef.name));
+            }
+            if (n.length > 0) {
+              e.push(n[Math.floor(Math.random() * n.length)]);
+            }
+          }
+          e.forEach((u) => {
+            if (!u) return;
+            const cardDiv = d.createElement("div");
+            const raritiesText = { common: "comum", uncommon: "incomum", rare: "raro" };
+            const iconHTML = u.icon && spriteImages[u.icon]
+                ? `<div class="card-icon"><img src="${spriteImages[u.icon].src}" alt="${u.name}"></div>`
                 : '<div class="card-icon"></div>';
-          (t.className = `upgrade-card rarity-${e.rarity}`),
-            (t.innerHTML = `${i}<div class="card-header"><h3>${
-              e.name
-            }</h3><div class="card-rarity">${
-              o[e.rarity]
-            }</div></div><div class="card-divider"></div><p class="card-description">${
-              e.description
-            }</p>`),
-            (t.onclick = () => selectUpgrade(e)),
-            upgradeCardsContainer.appendChild(t);
-        }),
+
+            let cardTitle = u.name;
+            let descriptionText = u.description; 
+
+            const currentUpgradeLevel = player.upgrades.get(u.name) || 0;
+            if (currentUpgradeLevel > 0 && !u.isUnique && typeof u.generatesNextLevelDescription === 'function') {
+                cardTitle = `${u.name} (Nível ${currentUpgradeLevel + 1})`;
+                descriptionText = u.generatesNextLevelDescription(player.stats, currentUpgradeLevel);
+            } else if (typeof u.generatesNextLevelDescription === 'function' && !u.isUnique) { 
+                descriptionText = u.generatesNextLevelDescription(player.stats, 0); 
+            }
+
+
+            cardDiv.className = `upgrade-card rarity-${u.rarity}`;
+            cardDiv.innerHTML = `
+                ${iconHTML}
+                <div class="card-header">
+                    <h3>${cardTitle}</h3>
+                    <div class="card-rarity">${raritiesText[u.rarity]}</div>
+                </div>
+                <div class="card-divider"></div>
+                <p class="card-description">${descriptionText}</p>`;
+            
+            cardDiv.onclick = () => selectUpgrade(u);
+            upgradeCardsContainer.appendChild(cardDiv);
+          });
+
           (rerollButton.innerHTML = `<img src="img/dado.png" style="vertical-align: middle; width: 22px; height: 22px; margin-right: 8px;"> Rerolar (${player.rerollsLeft} restante(s))`),
           (rerollButton.disabled = player.rerollsLeft <= 0);
-      }
-      function selectUpgrade(e) {
+        }
+        function selectUpgrade(e) {
         soundManager.playUIClickSound(),
           player.stats.tome && "common" === e.rarity
             ? e.apply(player)
@@ -3186,7 +3729,7 @@
           updateInventoryUI(),
           (gameState = "playing"),
           (levelUpScreen.style.display = "none"),
-          (d.getElementById("right-ui-container").style.opacity = "0.7"), // Garante que a UI do inventário reapareça
+          (d.getElementById("right-ui-container").style.opacity = "0.7"),
           updateAutofireIndicator(),
           (lastTime = performance.now()),
           requestAnimationFrame(gameLoop);
@@ -3201,7 +3744,7 @@
       class LightningBolt {
         constructor(startX, endY) {
           this.path = [];
-          this.life = 15; // Vida em frames, controla o tempo na tela
+          this.life = 15;
           let currentX = startX;
           let currentY = 0;
           this.path.push({ x: currentX, y: currentY });
@@ -3219,8 +3762,7 @@
 
         draw() {
           ctx.save();
-          // Cor ciano/branca brilhante para o raio
-          ctx.strokeStyle = `rgba(200, 255, 255, ${this.life / 15 * 0.9})`; // Efeito de fade-out
+          ctx.strokeStyle = `rgba(200, 255, 255, ${this.life / 15 * 0.9})`;
           ctx.lineWidth = 4;
           ctx.shadowColor = "#00ffff";
           ctx.shadowBlur = 20;
@@ -3253,7 +3795,6 @@
       }
             function generatePlatforms() {
         platforms.length = 0;
-        // Plataforma média na direita
         platforms.push({
           x: canvas.width - 450,
           y: canvas.height - 300,
@@ -3278,7 +3819,6 @@
       }
       function gameLoop(e) {
         if ("playing" !== gameState) {
-          // Renderiza o jogo em modo "pausado" no fundo de telas como gameOver e victory
           if (gameState === "gameOver" || gameState === 'victory') {
              ctx.clearRect(0, 0, canvas.width, canvas.height);
              Starfield.draw();
@@ -3289,7 +3829,7 @@
              player.draw();
              dNums.forEach((dn) => dn.draw());
           }
-          updateInventoryVisibility(); // Usa a nova função aqui também
+          updateInventoryVisibility();
           const t = Math.min(50, e - lastTime);
           return;
         }
@@ -3351,10 +3891,11 @@
           wisp && wisp.draw(),
           player.draw(),
           lightningBolts.forEach((lb) => lb.draw()),
-          dNums.forEach((e) => e.draw()),
-          (d.getElementById("exp-bar").style.width = `${
-            (player.exp / player.expToNextLevel) * 100
-          }%`),
+          dNums.forEach((e) => e.draw());
+          const expPercent = (player.exp / player.expToNextLevel) * 100;
+          d.getElementById("exp-bar").style.width = `${expPercent}%`;
+          d.getElementById("exp-bar-text").innerText = `${Math.floor(player.exp)}/${player.expToNextLevel} (${expPercent.toFixed(0)}%)`;
+          
           (d.getElementById("score-text").innerText = `Placar: ${score}`),
           (d.getElementById(
             "game-info-text"
@@ -3510,7 +4051,6 @@
               });
           });
       }
-      // Modularize event listeners and utility functions
       const switchScreen = (e, t, o) => {
         e && (e.style.display = "none"),
           t && (d.getElementById(t).style.display = "flex"),
@@ -3547,7 +4087,7 @@
           keys[e.key] = !0;
 
           if (e.key === "Escape") {
-            e.preventDefault(); // Impede outros comportamentos do ESC
+            e.preventDefault();
 
             if (optionsScreen.style.display === "flex") {
               soundManager.playUIClickSound();
@@ -3565,7 +4105,6 @@
               return;
             }
 
-            // Se nenhuma tela de menu estiver aberta, pause/despause o jogo
             if (gameState === "playing" || gameState === "paused") {
               togglePause();
             }
@@ -3575,7 +4114,7 @@
           if ("q" === e.key || "Q" === e.key) {
             gameData.showInventory = !gameData.showInventory;
             updateAllToggleButtons();
-            updateInventoryVisibility(); // Chama a nova função aqui
+            updateInventoryVisibility();
             return;
           }
 
@@ -3694,7 +4233,6 @@
               soundManager.playUIClickSound(), Leaderboard.clearScores();
             });
         
-        // Listener do "Olho" (que estava faltando no exemplo anterior)
         d.getElementById("toggleInventoryButton").addEventListener(
           "click",
           () => {
@@ -3710,7 +4248,6 @@
           }
         );
 
-        // Listener do botão de atalhos (que estava faltando no exemplo anterior)
         pauseShowControlsButton.addEventListener("click", () => {
           soundManager.playUIClickSound();
           const controlsGuide = d.getElementById("controls-guide");
@@ -3726,7 +4263,6 @@
           }
         });
         
-        // -- INÍCIO DO CÓDIGO NOVO ADICIONADO --
         d.getElementById("continueButton").addEventListener("click", () => {
           soundManager.playUIClickSound();
           infiniteModeActive = true;
@@ -3768,25 +4304,16 @@
           populateWiki(e.target.value);
         });
 
-        // -- FIM DO CÓDIGO NOVO ADICIONADO --
       }
 
-      // Adicione esta nova função DEPOIS da função setupEventListeners
       function showVictoryScreen() {
           gameState = 'victory';
           const statsDiv = d.getElementById('victoryStats');
-          let upgradesHTML = '<h3>Upgrades Adquiridos:</h3><div style="display: flex; flex-wrap: wrap; gap: 5px;">';
-          for(const [name, count] of player.upgrades) {
-              const upgradeData = allUpgrades.find(u => u.name === name);
-              upgradesHTML += `<div class="inventory-item">${upgradeData.icon ? `<img src="img/${upgradeData.icon}" style="width: 16px; height: 16px; image-rendering: pixelated;">` : ''} <span>${name} (${count})</span></div>`;
-          }
-          upgradesHTML += '</div>';
 
           statsDiv.innerHTML = `
               <strong>Pontuação:</strong> ${score}<br>
               <strong>Inimigos Derrotados:</strong> ${runEnemiesKilled}<br>
               <strong>Tempo Total:</strong> ${formatTime(runTimer)}<br>
-              ${upgradesHTML}
           `;
           d.getElementById('victoryScreen').style.display = 'flex';
       }
