@@ -887,7 +887,6 @@
         <button id="difficultyEasy" class="btn">Fácil</button>
         <button id="difficultyNormal" class="btn">Normal</button>
         <button id="difficultyHard" class="btn">Difícil</button>
-        <button id="difficultyCustom" class="btn">Custom (WIP)</button>
       </div>
       <button id="difficultyBackButton" class="btn" style="margin-top: 30px">
         Voltar
@@ -1581,46 +1580,82 @@
       const allUpgrades = [
         {
           name: "Essência do Vazio",
-          description: "Dano do Projétil +2",
+          description: "Aumenta o dano dos seus projéteis.",
           rarity: "common",
           icon: "catalisador.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentDmg = stats.projectileDamage;
+            const increase = 2;
+            const nextDmg = currentDmg + increase;
+            return `Dano do Projétil: ${currentDmg} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextDmg}</span> (+${increase}).`;
+          },
           apply: (e) => (e.stats.projectileDamage += 2),
         },
         {
           name: "Essência do Vazio +",
-          description: "Dano do Projétil +4",
+          description: "Aumenta ainda mais o dano dos seus projéteis.",
           rarity: "uncommon",
           icon: "catalisador2.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentDmg = stats.projectileDamage;
+            const increase = 4;
+            const nextDmg = currentDmg + increase;
+            return `Dano do Projétil: ${currentDmg} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextDmg}</span> (+${increase}).`;
+          },
           apply: (e) => (e.stats.projectileDamage += 4),
         },
         {
           name: "Vigor Primordial",
-          description: "HP Máximo +10%",
+          description: "Aumenta seu HP Máximo.",
           rarity: "common",
           icon: "crescimento.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentHp = Math.floor(stats.maxHp);
+            const increasePercent = 10;
+            const nextHp = Math.floor(currentHp * 1.1);
+            return `HP Máximo: ${currentHp} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextHp}</span> (+${increasePercent}%).`;
+          },
           apply: (e) => {
-            (e.stats.maxHp *= 1.1),
-              (e.hp = Math.min(e.stats.maxHp, e.hp + 0.1 * e.stats.maxHp));
+            const hpIncrease = e.stats.maxHp * 0.1;
+            e.stats.maxHp += hpIncrease;
+            e.hp += hpIncrease;
+            if (e.hp > e.stats.maxHp) e.hp = e.stats.maxHp;
           },
         },
         {
           name: "Vigor Primordial +",
-          description: "HP Máximo +20%",
+          description: "Aumenta ainda mais seu HP Máximo.",
           rarity: "uncommon",
           icon: "crescimento2.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentHp = Math.floor(stats.maxHp);
+            const increasePercent = 20;
+            const nextHp = Math.floor(currentHp * 1.2);
+            return `HP Máximo: ${currentHp} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextHp}</span> (+${increasePercent}%).`;
+          },
           apply: (e) => {
-            (e.stats.maxHp *= 1.2),
-              (e.hp = Math.min(e.stats.maxHp, e.hp + 0.2 * e.stats.maxHp));
+            const hpIncrease = e.stats.maxHp * 0.2;
+            e.stats.maxHp += hpIncrease;
+            e.hp += hpIncrease;
+            if (e.hp > e.stats.maxHp) e.hp = e.stats.maxHp;
           },
         },
         {
           name: "Vigor Primordial ++",
-          description: "HP Máximo +40%",
+          description: "Aumenta drasticamente seu HP Máximo.",
           rarity: "rare",
           icon: "crescimento3.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentHp = Math.floor(stats.maxHp);
+            const increasePercent = 40;
+            const nextHp = Math.floor(currentHp * 1.4);
+            return `HP Máximo: ${currentHp} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextHp}</span> (<span style="color:lime;">+${increasePercent}%</span>).`;
+          },
           apply: (e) => {
-            (e.stats.maxHp *= 1.4),
-              (e.hp = Math.min(e.stats.maxHp, e.hp + 0.4 * e.stats.maxHp));
+            const hpIncrease = e.stats.maxHp * 0.4;
+            e.stats.maxHp += hpIncrease;
+            e.hp += hpIncrease;
+            if (e.hp > e.stats.maxHp) e.hp = e.stats.maxHp;
           },
         },
         {
@@ -1656,30 +1691,76 @@
         },
         {
           name: "Eco Temporal",
-          description: "Velocidade de Ataque +12%",
+          description: "Aumenta a Velocidade de Ataque.",
           rarity: "common",
           icon: "ressonancia.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentAS = stats.attackSpeed.toFixed(0);
+            const multiplier = 0.88;
+            const nextAS = (currentAS * multiplier).toFixed(0);
+            const percentFaster = ((1 - multiplier) * 100).toFixed(0);
+            return `Velocidade de Ataque: ${currentAS}ms <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextAS}ms</span> (<span style="color:lime;">+${percentFaster}%</span> mais rápido).`;
+          },
           apply: (e) => (e.stats.attackSpeed *= 0.88),
         },
         {
           name: "Eco Temporal +",
-          description: "Velocidade de Ataque +24%",
+          description: "Aumenta ainda mais a Velocidade de Ataque.",
           rarity: "uncommon",
           icon: "ressonancia2.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentAS = stats.attackSpeed.toFixed(0);
+            const multiplier = 0.76;
+            const nextAS = (currentAS * multiplier).toFixed(0);
+            const percentFaster = ((1 - multiplier) * 100).toFixed(0);
+            return `Velocidade de Ataque: ${currentAS}ms <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextAS}ms</span> (<span style="color:lime;">+${percentFaster}%</span> mais rápido).`;
+          },
           apply: (e) => (e.stats.attackSpeed *= 0.76),
         },
         {
           name: "Passo Etéreo",
-          description: "Velocidade de Movimento +20%",
+          description: "Aumenta a Velocidade de Movimento.",
           rarity: "common",
           icon: "velocidade.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentSpeedDisplay = (
+              (stats.moveSpeed / (3.2 * 0.6)) *
+              100
+            ).toFixed(0);
+            const increasePercent = 20;
+            const nextSpeedDisplay = (
+              ((stats.moveSpeed * 1.2) / (3.2 * 0.6)) *
+              100
+            ).toFixed(0);
+            return `Vel. Movimento: Base +${
+              parseFloat(currentSpeedDisplay) - 100
+            }% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">Base +${
+              parseFloat(nextSpeedDisplay) - 100
+            }%</span> (<span style="color:lime;">+${increasePercent}%</span>).`;
+          },
           apply: (e) => (e.stats.moveSpeed *= 1.2),
         },
         {
           name: "Passo Etéreo +",
-          description: "Velocidade de Movimento +40%",
+          description: "Aumenta ainda mais a Velocidade de Movimento.",
           rarity: "uncommon",
           icon: "velocidade2.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentSpeedDisplay = (
+              (stats.moveSpeed / (3.2 * 0.6)) *
+              100
+            ).toFixed(0);
+            const increasePercent = 40;
+            const nextSpeedDisplay = (
+              ((stats.moveSpeed * 1.4) / (3.2 * 0.6)) *
+              100
+            ).toFixed(0);
+            return `Vel. Movimento: Base +${
+              parseFloat(currentSpeedDisplay) - 100
+            }% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">Base +${
+              parseFloat(nextSpeedDisplay) - 100
+            }%</span> (<span style="color:lime;">+${increasePercent}%</span>).`;
+          },
           apply: (e) => (e.stats.moveSpeed *= 1.4),
         },
         {
@@ -1755,39 +1836,81 @@
         },
         {
           name: "Olho do Predador",
-          description: "Chance de Crítico +5%",
+          description: "Aumenta a Chance de Acerto Crítico.",
           rarity: "common",
           icon: "common.png",
-          apply: (e) => (e.stats.critChance += 0.05),
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentCrit = (stats.critChance * 100).toFixed(0);
+            const increase = 5;
+            const nextCrit = Math.min(100, parseFloat(currentCrit) + increase);
+            return `Chance de Crítico: ${currentCrit}% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextCrit}%</span> (<span style="color:lime;">+${increase}%</span>).`;
+          },
+          apply: (e) =>
+            (e.stats.critChance = Math.min(1.0, e.stats.critChance + 0.05)),
         },
         {
-          name: "Salto Gravitacional",
-          description: "Altura do Pulo +30%",
-          rarity: "common",
-          icon: "common.png",
-          apply: (e) => (e.stats.jumpStrength *= 1.3),
-        },
+      name: "Salto Gravitacional",
+      description: "Aumenta a Altura do seu Pulo.",
+      rarity: "common",
+      icon: "common.png",
+      generatesNextLevelDescription: (stats, currentLevel) => {
+        const baseJumpStrength = 15 * 0.6;
+        const currentBonusPercent = (((stats.jumpStrength / baseJumpStrength) - 1) * 100).toFixed(0);
+        const increasePercent = 6;
+        
+        const nextJumpStrength = stats.jumpStrength * 1.06;
+        const nextBonusPercent = (((nextJumpStrength / baseJumpStrength) - 1) * 100).toFixed(0);
+
+        return `Altura do Pulo: Atual (+${currentBonusPercent}%) <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">Próximo (+${nextBonusPercent}%)</span> (<span style="color:lime;">+${increasePercent}% do atual</span>).`;
+      },
+      apply: (e) => (e.stats.jumpStrength *= 1.06),
+    },
         {
           name: "Pulso Restaurador",
-          description: "Cura todo o HP",
+          description: "Cura todo o HP.",
           rarity: "common",
           icon: "common.png",
+          generatesNextLevelDescription: (
+            stats,
+            currentLevel,
+            playerInstance
+          ) => {
+            const healAmount = Math.floor(stats.maxHp - playerInstance.hp);
+            return `Restaura <span style="font-weight:bold; color:lime;">${Math.max(
+              0,
+              healAmount
+            ).toFixed(0)}</span> de HP para o máximo.`;
+          },
           apply: (e) => (e.hp = e.stats.maxHp),
+          isUnique: true,
         },
         {
           name: "Carapaça de Ébano",
-          description: "Defesa +4",
+          description: "Aumenta sua Defesa.",
           rarity: "common",
           icon: "common.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentDef = stats.defense;
+            const increase = 4;
+            const nextDef = currentDef + increase;
+            return `Defesa: ${currentDef} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextDef}</span> (+${increase}).`;
+          },
           apply: (e) => (e.stats.defense += 4),
         },
         {
           name: "Ceifador de Almas",
           description:
-            "1% de chance de inimigos droparem um orbe de alma (EXP perm.)",
+            "Aumenta a chance de inimigos droparem orbes de alma (EXP permanente).",
           rarity: "common",
           icon: "common.png",
-          apply: (e) => (e.stats.soulOrbChance += 0.01),
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentChance = ((stats.soulOrbChance || 0) * 100).toFixed(0);
+            const increase = 1;
+            const nextChance = parseFloat(currentChance) + increase;
+            return `Chance de Orbe de Alma: ${currentChance}% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextChance}%</span> (<span style="color:lime;">+${increase}%</span>).`;
+          },
+          apply: (e) =>
+            (e.stats.soulOrbChance = (e.stats.soulOrbChance || 0) + 0.01),
         },
         {
           name: "Lâmina Perfurante",
@@ -1803,59 +1926,125 @@
         },
         {
           name: "Disparo Hiper-sônico",
-          description: "Velocidade do Projétil +25%",
+          description: "Aumenta a Velocidade dos Projéteis.",
           rarity: "common",
           icon: "common.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const baseProjSpeed = 8 * 0.6;
+            const currentSpeedPercent = (
+              (stats.projectileSpeed / baseProjSpeed - 1) *
+              100
+            ).toFixed(0);
+            const increaseMult = 1.25;
+            const nextSpeedPercent = (
+              ((stats.projectileSpeed * increaseMult) / baseProjSpeed - 1) *
+              100
+            ).toFixed(0);
+            return `Velocidade do Projétil: Atual (+${currentSpeedPercent}%) <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">Próximo (+${nextSpeedPercent}%)</span> (<span style="color:lime;">+25%</span>).`;
+          },
           apply: (e) => (e.stats.projectileSpeed *= 1.25),
         },
         {
           name: "Singularidade Instável",
-          description: "Tamanho do Projétil +20%",
+          description: "Aumenta o Tamanho dos Projéteis.",
           rarity: "uncommon",
           icon: "uncommon.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const baseSize = 5;
+            const currentSizePercent = (
+              ((stats.projectileSize || baseSize) / baseSize - 1) *
+              100
+            ).toFixed(0);
+            const increasePercent = 20;
+            const nextSizePercent = (
+              (((stats.projectileSize || baseSize) * 1.2) / baseSize - 1) *
+              100
+            ).toFixed(0);
+            return `Tamanho do Projétil: Atual (+${currentSizePercent}%) <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">Próximo (+${nextSizePercent}%)</span> (<span style="color:lime;">+${increasePercent}%</span>).`;
+          },
           apply: (e) => (e.stats.projectileSize *= 1.2),
         },
         {
           name: "Manto Espectral",
-          description: "+10% mais tempo de invulnerabilidade após ser atingido",
+          description:
+            "Aumenta o tempo de invulnerabilidade após ser atingido.",
           rarity: "uncommon",
           icon: "uncommon.png",
-          apply: (e) => (e.stats.invulnerabilityTime *= 1),
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentTime = stats.invulnerabilityTime.toFixed(0);
+            const increasePercent = 10;
+            const nextTime = (stats.invulnerabilityTime * 1.1).toFixed(0);
+            return `Tempo Invul.: ${currentTime}ms <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextTime}ms</span> (<span style="color:lime;">+${increasePercent}%</span>).`;
+          },
+          apply: (e) => (e.stats.invulnerabilityTime *= 1.1),
         },
         {
           name: "Oráculo do Acaso",
-          description: "Ganha +1 carga de Rerolar por subida de nível.",
+          description: "Ganha cargas de Rerolar por subida de nível.",
           rarity: "uncommon",
           icon: "uncommon.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentCharges = stats.rerollCharges;
+            const increase = 1;
+            const nextCharges = currentCharges + increase;
+            return `Cargas de Rerolar/Nível: ${currentCharges} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextCharges}</span> (<span style="color:lime;">+${increase}</span>).`;
+          },
           apply: (e) => e.stats.rerollCharges++,
         },
         {
           name: "Pluma Ascendente",
-          description: "Ganha +1 pulo extra",
+          description: "Ganha pulos extras.",
           rarity: "uncommon",
           icon: "uncommon.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentExtraJumps = (stats.maxJumps || 1) - 1;
+            const increase = 1;
+            const nextExtraJumps = currentExtraJumps + increase;
+            return `Pulos Extras: ${currentExtraJumps} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextExtraJumps}</span> (<span style="color:lime;">+${increase}</span>).`;
+          },
           apply: (e) => e.stats.maxJumps++,
         },
         {
           name: "Dádiva do Destino",
-          description: "Chance aumentada de obter melhorias incomuns/raras",
+          description: "Aumenta a chance de obter melhorias raras.",
           rarity: "uncommon",
           icon: "uncommon.png",
-          apply: (e) => (e.stats.luck += 0.1),
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentLuck = ((stats.luck || 0) * 100).toFixed(0);
+            const increase = 10;
+            const nextLuck = parseFloat(currentLuck) + increase;
+            return `Sorte (Raridade): ${currentLuck}% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextLuck}%</span> (<span style="color:lime;">+${increase}%</span>).`;
+          },
+          apply: (e) => (e.stats.luck = (e.stats.luck || 0) + 0.1),
         },
         {
           name: "Bênção de Vida",
-          description:
-            "5% de chance de inimigos mortos droparem um orbe de cura",
+          description: "Inimigos têm chance de dropar orbes de cura.",
           rarity: "uncommon",
           icon: "uncommon.png",
-          apply: (e) => (e.stats.healOrbChance += 0.05),
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentChance = ((stats.healOrbChance || 0) * 100).toFixed(0);
+            const increase = 5;
+            const nextChance = parseFloat(currentChance) + increase;
+            return `Chance Orbe de Cura: ${currentChance}% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextChance}%</span> (<span style="color:lime;">+${increase}%</span>).`;
+          },
+          apply: (e) =>
+            (e.stats.healOrbChance = (e.stats.healOrbChance || 0) + 0.05),
         },
         {
           name: "Golpe Fatal",
-          description: "Acertos críticos causam +50% de dano",
+          description: "Aumenta o dano de Acertos Críticos.",
           rarity: "uncommon",
           icon: "uncommon.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentCritDmgBonus = (
+              (stats.critDamage - 1.5) *
+              100
+            ).toFixed(0);
+            const increase = 50;
+            const nextCritDmgBonus = parseFloat(currentCritDmgBonus) + increase;
+            return `Dano Crítico Bônus: +${currentCritDmgBonus}% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">+${nextCritDmgBonus}%</span> (<span style="color:lime;">+${increase}%</span>).`;
+          },
           apply: (e) => (e.stats.critDamage += 0.5),
         },
         {
@@ -1884,10 +2073,69 @@
         },
         {
           name: "Fome de Conhecimento",
-          description: "Ganha 20% mais EXP de todas as fontes.",
+          description: "Ganha mais EXP de todas as fontes.",
           rarity: "uncommon",
           icon: "uncommon.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentModifierPercent = (
+              (stats.expGainModifier - 1) *
+              100
+            ).toFixed(0);
+            const increasePercent = 20;
+            const nextModifierPercent = (
+              (stats.expGainModifier * 1.2 - 1) *
+              100
+            ).toFixed(0);
+            return `Bônus de EXP: +${currentModifierPercent}% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">+${nextModifierPercent}%</span> (<span style="color:lime;">+${increasePercent}%</span>).`;
+          },
           apply: (e) => (e.stats.expGainModifier *= 1.2),
+        },
+        {
+          name: "Feixe Colateral",
+          description:
+            "Seus acertos têm chance de disparar um feixe laser horizontal que atravessa inimigos.",
+          rarity: "uncommon",
+          icon: "uncommon.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentChance = (
+              (stats.collateralBeamChance || 0) * 100
+            ).toFixed(0);
+            const chanceIncrease = 5;
+            const nextChance = parseFloat(currentChance) + chanceIncrease;
+            return `Chance de <span style="font-weight:bold; color:cyan;">${nextChance}%</span> de disparar um laser horizontal ao acertar.`;
+          },
+          apply: (e) => {
+            if (
+              !e.stats.collateralBeamChance ||
+              e.stats.collateralBeamChance < 0.01
+            ) {
+              e.stats.collateralBeamChance = 0.2;
+            } else {
+              e.stats.collateralBeamChance = Math.min(
+                0.5,
+                e.stats.collateralBeamChance + 0.05
+              );
+              e.stats.collateralBeamDamageFactor = Math.min(
+                0.75,
+                (e.stats.collateralBeamDamageFactor || 0.25) + 0.05
+              );
+            }
+          },
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const baseChance = 20;
+            const incrementalChance = 5;
+            const currentChanceVal = (stats.collateralBeamChance || 0) * 100;
+            let nextChanceVal;
+            if (currentLevel === 0) {
+              nextChanceVal = baseChance;
+            } else {
+              nextChanceVal = Math.min(
+                50,
+                currentChanceVal + incrementalChance
+              );
+            }
+            return `Acertos têm <span style="font-weight:bold; color:cyan;">${nextChanceVal}%</span> de chance de disparar um laser horizontal.`;
+          },
         },
         {
           name: "Mente Expandida",
@@ -1928,10 +2176,17 @@
         },
         {
           name: "Aura Solar",
-          description: "Seu corpo causa 40 de dano de contato aos inimigos",
+          description: "Seu corpo causa dano de contato aos inimigos.",
           rarity: "rare",
           icon: "rare.png",
-          apply: (e) => (e.stats.contactDamage += 40),
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentDmg = stats.contactDamage || 0;
+            const increase = 40;
+            const nextDmg = currentDmg + increase;
+            return `Dano de Contato: ${currentDmg} <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextDmg}</span> (<span style="color:lime;">+${increase}</span>).`;
+          },
+          apply: (e) =>
+            (e.stats.contactDamage = (e.stats.contactDamage || 0) + 40),
         },
         {
           name: "Tomo do Potencial",
@@ -1958,6 +2213,21 @@
           rarity: "rare",
           icon: "rare.png",
           apply: (e) => (e.stats.wound = !0),
+        },
+        {
+          name: "Precisão Mortal",
+          description: "Aumenta drasticamente sua Chance de Acerto Crítico.",
+          rarity: "rare",
+          icon: "rare.png",
+          generatesNextLevelDescription: (stats, currentLevel) => {
+            const currentCrit = (stats.critChance * 100).toFixed(0);
+            const increase = 15;
+            const nextCrit = Math.min(100, parseFloat(currentCrit) + increase);
+            return `Chance de Crítico +<span style="font-weight:bold; color:yellow;">${increase}%</span>. Atual: ${currentCrit}% <span style="color:#aaa;">-></span> <span style="font-weight:bold; color:lime;">${nextCrit}%</span>.`;
+          },
+          apply: (e) => {
+            e.stats.critChance = Math.min(1.0, e.stats.critChance + 0.15);
+          },
         },
       ];
       let availableUpgrades = [...allUpgrades];
@@ -1988,23 +2258,23 @@
         getBaseStats() {
           return {
             maxHp: 100,
-            moveSpeed: 3.2 * 0.6,
-            jumpStrength: 15 * 0.7,
+            moveSpeed: 3.2 * 0.55,
+            jumpStrength: 15 * 0.6,
             maxJumps: 1,
             attackSpeed: 700,
             projectileDamage: 10,
             projectileSpeed: 8 * 0.6,
             projectileSize: 5,
             projectilePierce: 1,
-            critChance: 0.05,
-            critDamage: 1.5,
+            critChance: 0.03,
+            critDamage: 1.25,
             defense: 0,
-            invulnerabilityTime: 100,
+            invulnerabilityTime: 120,
             luck: 0,
-            upgradeChoices: 3,
+            upgradeChoices: 4,
             rerollCharges: 1,
             lifeSteal: 0,
-            expGainModifier: 1.2,
+            expGainModifier: 1.0,
             rage: !1,
             hpRegenPerEnemy: 0,
             healOrbChance: 0,
@@ -2012,6 +2282,9 @@
             contactDamage: 0,
             fragmentation: 0,
             frictionProjectiles: 0,
+            kineticCometQueue: [],
+            kineticCometLaunchDelay: 100,
+            kineticCometTimer: 0,
             thunderboltCount: 0,
             barrier: !1,
             barrierReady: !0,
@@ -2026,6 +2299,8 @@
             laserBeam: false,
             interceptor: false,
             chainJumps: 0,
+            collateralBeamChance: 0,
+            collateralBeamDamageFactor: 0.25,
           };
         }
         getWeaponTip() {
@@ -2198,6 +2473,59 @@
               this.heal(
                 (enemies.length * this.stats.hpRegenPerEnemy * e) / 1e3
               );
+
+          if (
+            this.stats.frictionProjectiles > 0 &&
+            this.distanceTraveled >= 1000
+          ) {
+            for (let i = 0; i < this.stats.frictionProjectiles; i++) {
+              this.stats.kineticCometQueue.push({
+                x: this.x + this.width / 2,
+                y: this.y + this.height / 2,
+                angle: -Math.PI / 2,
+                damage: 40,
+                isExplosive: true,
+              });
+            }
+            this.distanceTraveled = 0;
+            if (
+              this.stats.kineticCometQueue.length > 0 &&
+              this.stats.kineticCometTimer <= 0
+            ) {
+              this.stats.kineticCometTimer = this.stats.kineticCometLaunchDelay;
+            }
+          }
+
+          if (
+            this.stats.kineticCometQueue.length > 0 &&
+            this.stats.kineticCometTimer > 0
+          ) {
+            this.stats.kineticCometTimer -= e;
+            if (this.stats.kineticCometTimer <= 0) {
+              const projData = this.stats.kineticCometQueue.shift();
+              if (projData) {
+                pProjs.push(
+                  new PlayerProjectile(
+                    projData.x,
+                    projData.y,
+                    projData.angle,
+                    projData.damage,
+                    projData.isExplosive
+                  )
+                );
+                soundManager.playSound(300, 800, 0.1, "triangle", 0.3);
+              }
+              if (this.stats.kineticCometQueue.length > 0) {
+                this.stats.kineticCometTimer =
+                  this.stats.kineticCometLaunchDelay;
+              }
+            }
+          } else if (
+            this.stats.kineticCometQueue.length > 0 &&
+            this.stats.kineticCometTimer <= 0
+          ) {
+            this.stats.kineticCometTimer = this.stats.kineticCometLaunchDelay;
+          }
         }
         draw() {
           const e = this.x + this.width / 2,
@@ -2582,13 +2910,12 @@
         enemies.length = 0;
         totalEnemiesThisWave = 0;
 
-        if (e % 5 === 0 && e > 0) {
-          const waveDefForHP = createProceduralWave(e);
-          const bossHP = calculateWaveHP(waveDefForHP);
+        if (e % 5 === 0 && e > 0 && e <= 15) {
+          const proceduralDefForBossHP = createProceduralWave(e);
+          const bossHP = calculateWaveHP(proceduralDefForBossHP);
           enemies.push(new BossEnemy(bossHP, e));
         } else {
-          let waveDef =
-            WAVE_DEFS.find((t) => t.wave === e) || createProceduralWave(e);
+          let waveDef = createProceduralWave(e);
           for (const enemyName in waveDef.enemies) {
             for (let i = 0; i < waveDef.enemies[enemyName]; i++) {
               if (ENEMY_TYPES[enemyName]) {
@@ -3300,7 +3627,7 @@
           this.width = 150;
           this.height = 150;
           this.speed = 0.5 * 0.6;
-          this.maxHp = hp;
+          this.maxHp = hp *2;
           this.hp = this.maxHp;
           this.damage = Math.round(25 * this.scaleFactor);
           this.expValue = Math.round(1000 * this.scaleFactor);
@@ -3417,22 +3744,27 @@
                   onTransitionEnd
                 );
 
-                player.gainExp(player.expToNextLevel * 1.1 + 10);
-
-                undergoingBossDefeatTransition = false;
-                gameState = "playing";
-                let nextState = "intermission";
-                if (player.isLevelingUp && gameState === "levelUp") {
-                  nextState = "levelUp";
+                if (player.isLevelingUp) {
+                  player.exp += 50;
                 } else {
-                  gameState = "playing";
+                  player.exp = player.expToNextLevel;
+                  player.isLevelingUp = true;
+                  d.getElementById("exp-bar").style.backgroundColor = "#3498db";
+                  d.getElementById("exp-bar").style.width = "100%";
+                  const expText = d.getElementById("exp-bar-text");
+                  if (expText)
+                    expText.innerText = `${player.expToNextLevel}/${player.expToNextLevel} (100%)`;
                 }
 
-                lastTime = performance.now();
+                if (gameState === "playing" || gameState === "transitioning") {
+                  player.performLevelUpActions();
+                }
 
-                if (nextState === "levelUp") {
-                } else {
+                undergoingBossDefeatTransition = false;
+
+                if (gameState !== "levelUp") {
                   gameState = "playing";
+                  lastTime = performance.now();
                   requestAnimationFrame(gameLoop);
                 }
               };
@@ -3440,8 +3772,8 @@
                 "transitionend",
                 onTransitionEnd
               );
-              setTimeout(onTransitionEnd, 500);
-            }, 600);
+              setTimeout(onTransitionEnd, 1500);
+            }, 1300);
           }
         }
 
@@ -3952,34 +4284,34 @@
           this.x += separationX * this.speed * 0.5 * this.slowFactor;
 
           if (this.state === "seeking_burrow_spot") {
-            const targetX = player.x + player.width / 2 - this.width / 2;
-            const targetY = this.y + this.speed * 0.3 * this.slowFactor;
+            this.targetBurrowX = player.x + (Math.random() - 0.5) * 100;
+            const targetGroundY =
+              getGroundHeight(this.targetBurrowX + this.width / 2) +
+              this.burrowDepth * 0.2;
 
             const angleToTarget = Math.atan2(
-              targetY - this.y,
-              targetX - this.x
+              targetGroundY - this.y,
+              this.targetBurrowX - this.x
             );
 
             this.x +=
-              Math.cos(angleToTarget) * this.speed * 0.5 * this.slowFactor;
+              Math.cos(angleToTarget) * this.speed * 0.6 * this.slowFactor;
             this.y +=
-              Math.sin(angleToTarget) * this.speed * 0.5 * this.slowFactor;
+              Math.sin(angleToTarget) * this.speed * 0.6 * this.slowFactor;
 
-            if (this.y < this.chaseHeight * 0.7)
-              this.y = this.chaseHeight * 0.7;
-            if (this.y + this.height > canvas.height + this.height / 2) {
-              this.y = canvas.height + this.height / 2 - this.height;
-            }
+            if (this.y < this.chaseHeight * 0.8)
+              this.y = this.chaseHeight * 0.8;
+            if (this.y > canvas.height) this.y = canvas.height;
 
             if (
-              Math.abs(
-                this.x + this.width / 2 - (player.x + player.width / 2)
-              ) < 150 &&
+              Math.abs(this.x - this.targetBurrowX) < this.width * 1.5 &&
               this.burrowCooldown <= 0 &&
-              this.y > player.y
+              this.y + this.height > player.y
             ) {
               this.state = "burrowing";
               this.isBurrowed = true;
+              soundManager.playSound(100, 20, 0.5, "sawtooth", 0.3);
+              soundManager.playNoise(0.5, 200, 0.2, "lowpass");
             }
           } else if (this.state === "burrowing") {
             this.y += this.riseSpeed * 1.5 * this.slowFactor;
@@ -4224,7 +4556,46 @@
           if (player.stats.cold)
             e.slowFactor = Math.max(0.2, e.slowFactor * 0.99);
           if (player.stats.wound) e.bleedDamage += 0.1 * this.damage;
+          if (
+            player.stats.collateralBeamChance > 0 &&
+            Math.random() < player.stats.collateralBeamChance
+          ) {
+            const laserStartY = e.y + e.height / 2;
+            const laserDamage =
+              player.stats.projectileDamage *
+              player.stats.collateralBeamDamageFactor;
+            const laserThicknessForHit = 15;
 
+            particles.push(
+              new HorizontalLaserEffect(
+                e.x + e.width / 2,
+                laserStartY,
+                Math.PI,
+                canvas.width
+              )
+            );
+            particles.push(
+              new HorizontalLaserEffect(
+                e.x + e.width / 2,
+                laserStartY,
+                0,
+                canvas.width
+              )
+            );
+
+            enemies.forEach((otherEnemy) => {
+              if (otherEnemy.hp > 0 && otherEnemy !== e) {
+                const otherEnemyCenterY = otherEnemy.y + otherEnemy.height / 2;
+                if (
+                  Math.abs(otherEnemyCenterY - laserStartY) <
+                  otherEnemy.height / 2 + laserThicknessForHit
+                ) {
+                  otherEnemy.takeDamage(laserDamage, false);
+                }
+              }
+            });
+            soundManager.playSound(1200, 200, 0.2, "sawtooth", 0.25);
+          }
           if (this.jumpsLeft > 0) {
             this.jumpsLeft--;
             let closestEnemy = null;
@@ -4333,6 +4704,43 @@
           const particleLife =
             life * (1 + (Math.random() - 0.5) * lifeVariation);
           particles.push(new Particle(e, t, o, speedMult, particleLife));
+        }
+      }
+      class HorizontalLaserEffect {
+        constructor(x, y, angle, length) {
+          this.x = x;
+          this.y = y;
+          this.angle = angle;
+          this.length = length * 10;
+          this.life = 15;
+          this.maxWidth = 8 + Math.random() * 5;
+        }
+        update() {
+          this.life--;
+        }
+        draw() {
+          if (this.life <= 0) return;
+          const alpha = this.life / 15;
+          const currentWidth = this.maxWidth * (this.life / 15);
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y - currentWidth / 2);
+          ctx.lineTo(
+            this.x + Math.cos(this.angle) * this.length,
+            this.y - currentWidth / 2
+          );
+          ctx.lineTo(
+            this.x + Math.cos(this.angle) * this.length,
+            this.y + currentWidth / 2
+          );
+          ctx.lineTo(this.x, this.y + currentWidth / 2);
+          ctx.closePath();
+
+          ctx.fillStyle = `rgba(0, 220, 255, ${alpha * 0.7})`;
+          ctx.shadowColor = "rgba(0, 220, 255, 0.5)";
+          ctx.shadowBlur = 10;
+          ctx.fill();
+          ctx.restore();
         }
       }
       class Orb {
@@ -4815,13 +5223,18 @@
             cardTitle = `${u.name} (Nível ${currentUpgradeLevel + 1})`;
             descriptionText = u.generatesNextLevelDescription(
               player.stats,
-              currentUpgradeLevel
+              currentUpgradeLevel,
+              player
             );
           } else if (
             typeof u.generatesNextLevelDescription === "function" &&
-            !u.isUnique
+            (!u.isUnique || u.name === "Pulso Restaurador")
           ) {
-            descriptionText = u.generatesNextLevelDescription(player.stats, 0);
+            descriptionText = u.generatesNextLevelDescription(
+              player.stats,
+              0,
+              player
+            );
           }
 
           cardDiv.className = `upgrade-card rarity-${u.rarity}`;
@@ -4981,23 +5394,23 @@
           orbs,
           dNums,
           lightningBolts,
-        ].forEach((e) => e.forEach((e) => e.update(t))),
-          pProjs.forEach((e) =>
-            enemies.forEach((t) => {
-              e.active &&
-                t.hp > 0 &&
-                checkCollision(
-                  {
-                    x: e.x - e.radius,
-                    y: e.y - e.radius,
-                    width: 2 * e.radius,
-                    height: 2 * e.radius,
-                  },
-                  t
-                ) &&
-                e.onHit(t);
-            })
-          ),
+        ].forEach((arr) => arr.forEach((item) => item.update(t)));
+        pProjs.forEach((e) =>
+          enemies.forEach((t) => {
+            e.active &&
+              t.hp > 0 &&
+              checkCollision(
+                {
+                  x: e.x - e.radius,
+                  y: e.y - e.radius,
+                  width: 2 * e.radius,
+                  height: 2 * e.radius,
+                },
+                t
+              ) &&
+              e.onHit(t);
+          })
+        ),
           eProjs.forEach((e) => {
             e.active &&
               checkCollision(
@@ -5022,10 +5435,10 @@
           Starfield.draw(),
           drawGround(),
           drawPlatforms(),
-          [particles, orbs, pProjs, eProjs, enemies].forEach((e) =>
-            e.forEach((e) => e.draw())
-          ),
-          wisp && wisp.draw(),
+          [particles, orbs, pProjs, eProjs, enemies].forEach((arr) =>
+            arr.forEach((item) => item.draw())
+          );
+        wisp && wisp.draw(),
           player.draw(),
           lightningBolts.forEach((lb) => lb.draw()),
           dNums.forEach((e) => e.draw());
@@ -5067,7 +5480,11 @@
           (wisp = null),
           (platforms = []),
           (availableUpgrades = [...allUpgrades]),
-          generateGround(),
+          (currentGroundColor = "#1a1a2a");
+        currentGroundStrokeColor = "#9b59b6";
+        currentStarfieldConfig = 0;
+
+        generateGround(),
           generatePlatforms(),
           Starfield.init(),
           (player = new Player()),
@@ -5516,9 +5933,6 @@
         });
         difficultyHard.addEventListener("click", () => {
           setDifficultyAndStart("Difícil", 1.35, 1.2);
-        });
-        difficultyCustom.addEventListener("click", () => {
-          alert("Dificuldade Customizada ainda não implementada!");
         });
       }
 
